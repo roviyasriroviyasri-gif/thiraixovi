@@ -1,0 +1,2307 @@
+<!DOCTYPE html>
+<html lang="en" class="dark" id="html-root">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>THIRAIX - Fisherman Safety & Maritime Boundary Alert System</title>
+  <script src="https://www.gstatic.com/antigravity/web/dev/tailwindcss.min.js"></script>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <style>
+    @keyframes scan-radar { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+    @keyframes flash-red { 0%, 100% { background-color: rgba(239, 68, 68, 0.3); } 50% { background-color: rgba(239, 68, 68, 0.9); } }
+    @keyframes pulse-ring { 0% { transform: scale(0.95); opacity: 0.8; } 50% { transform: scale(1.3); opacity: 0.2; } 100% { transform: scale(1.5); opacity: 0; } }
+    .alert-strobe { animation: flash-red 0.7s ease-in-out infinite; }
+    .phone-shadow-dark { box-shadow: 0 25px 70px -15px rgba(0, 0, 0, 0.85), 0 0 45px rgba(14, 165, 233, 0.25); }
+    .phone-shadow-light { box-shadow: 0 20px 50px -10px rgba(0, 0, 0, 0.2), 0 0 30px rgba(2, 132, 199, 0.2); }
+    ::-webkit-scrollbar { width: 5px; height: 5px; }
+    ::-webkit-scrollbar-track { background: rgba(100, 116, 139, 0.2); }
+    ::-webkit-scrollbar-thumb { background: rgba(56, 189, 248, 0.5); border-radius: 4px; }
+  </style>
+</head>
+<body class="bg-slate-950 text-slate-100 min-h-screen font-sans selection:bg-cyan-500 selection:text-black overflow-x-hidden p-2 sm:p-4 transition-colors duration-300" id="body-root">
+
+  <!-- TOP GLOBAL HEADER -->
+  <header class="border-b border-cyan-900/40 bg-slate-900/90 backdrop-blur-md sticky top-0 z-50 px-4 py-3 rounded-2xl mb-4 shadow-lg transition-colors duration-300" id="global-header">
+    <div class="max-w-7xl mx-auto flex flex-wrap items-center justify-between gap-3">
+      
+      <!-- Brand & Title -->
+      <div class="flex items-center gap-3">
+        <div class="w-10 h-10 rounded-xl bg-gradient-to-tr from-cyan-600 via-blue-600 to-indigo-600 flex items-center justify-center shadow-lg shadow-cyan-500/20 border border-cyan-400/40 text-white">
+          <i class="fa-solid fa-ship text-lg"></i>
+        </div>
+        <div>
+          <div class="flex items-center gap-2">
+            <h1 class="text-xl font-black tracking-wider bg-clip-text text-transparent bg-gradient-to-r from-cyan-400 via-sky-300 to-blue-200">
+              THIRAIX
+            </h1>
+            <span class="text-[10px] uppercase tracking-widest px-2 py-0.5 rounded-full bg-cyan-950 border border-cyan-500/40 text-cyan-300 font-semibold" id="brand-badge">
+              v2.6 Real GPS & Tamil AI
+            </span>
+          </div>
+          <p class="text-xs text-slate-400" id="brand-tagline">
+            Intelligence Beyond the Waves • Smart AI Maritime Boundary & Fisherman Safety System
+          </p>
+        </div>
+      </div>
+
+      <!-- Controls: Theme + 10-Languages + Siren + View -->
+      <div class="flex flex-wrap items-center gap-2 sm:gap-3">
+        
+        <!-- Day / Night Mode Toggle -->
+        <button id="btn-theme-toggle" onclick="toggleThemeMode()" class="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 border border-slate-700 text-xs font-semibold text-amber-300 transition shadow">
+          <i id="theme-icon" class="fa-solid fa-sun text-amber-400"></i>
+          <span id="theme-label">Day Mode</span>
+        </button>
+
+        <!-- 10-Language Selector Dropdown -->
+        <div class="flex items-center bg-slate-800 rounded-lg border border-cyan-500/50 p-0.5 shadow">
+          <i class="fa-solid fa-language text-cyan-400 ml-2 mr-1 text-xs"></i>
+          <select id="lang-selector-global" onchange="switchSystemLanguage(this.value)" class="bg-transparent text-xs text-cyan-300 font-bold py-1 px-2 focus:outline-none cursor-pointer">
+            <option value="en" selected>English (Default)</option>
+            <option value="ta">தமிழ் (Tamil)</option>
+            <option value="hi">हिन्दी (Hindi)</option>
+            <option value="te">తెలుగు (Telugu)</option>
+            <option value="kn">ಕನ್ನಡ (Kannada)</option>
+            <option value="ml">മലയാളം (Malayalam)</option>
+            <option value="bn">বাংলা (Bengali)</option>
+            <option value="or">ଓଡ଼ିଆ (Odia)</option>
+            <option value="pa">ਪੰਜਾਬੀ (Punjabi)</option>
+            <option value="ur">اردو (Urdu)</option>
+          </select>
+        </div>
+
+        <!-- Siren Sound Toggle -->
+        <button id="btn-audio-toggle" onclick="toggleAudioSiren()" class="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 border border-slate-700 text-xs text-cyan-300 transition shadow">
+          <i id="audio-icon" class="fa-solid fa-volume-high text-cyan-400"></i>
+          <span id="audio-label">Siren On</span>
+        </button>
+
+        <!-- View Switcher -->
+        <div class="flex bg-slate-800 p-0.5 rounded-lg border border-slate-700 text-xs">
+          <button onclick="setViewMode('phone')" id="tab-phone-btn" class="px-2.5 sm:px-3 py-1.5 rounded-md bg-cyan-600 text-white font-medium transition shadow">
+            <i class="fa-solid fa-mobile-screen mr-1"></i> <span id="lbl-btn-phone">Phone</span>
+          </button>
+          <button onclick="setViewMode('dual')" id="tab-dual-btn" class="px-2.5 sm:px-3 py-1.5 rounded-md text-slate-300 hover:text-white transition">
+            <i class="fa-solid fa-table-columns mr-1"></i> <span id="lbl-btn-dual">Dual View</span>
+          </button>
+          <button onclick="setViewMode('dashboard')" id="tab-dash-btn" class="px-2.5 sm:px-3 py-1.5 rounded-md text-slate-300 hover:text-white transition">
+            <i class="fa-solid fa-tower-broadcast mr-1"></i> <span id="lbl-btn-rescue">Rescue Center</span>
+          </button>
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <!-- REAL GPS & LOCATION STATUS BANNER -->
+  <div class="max-w-7xl mx-auto bg-slate-900 border border-slate-800 p-3.5 rounded-2xl mb-4 shadow flex flex-col md:flex-row items-center justify-between gap-3 text-xs" id="location-time-bar">
+    <div class="flex flex-wrap items-center gap-2.5">
+      <!-- Live Clock & Date -->
+      <div class="flex items-center gap-2 bg-slate-950 px-3 py-1.5 rounded-xl border border-cyan-900/60 font-mono text-cyan-300">
+        <i class="fa-solid fa-clock text-cyan-400"></i>
+        <span id="live-real-time" class="font-bold">14:20:00</span>
+      </div>
+      <div class="flex items-center gap-2 bg-slate-950 px-3 py-1.5 rounded-xl border border-slate-800 font-mono text-slate-300">
+        <i class="fa-solid fa-calendar-day text-amber-400"></i>
+        <span id="live-real-date">Sunday, 27 September 2026</span>
+      </div>
+
+      <!-- Live GPS Location Display -->
+      <div class="flex items-center gap-2 bg-emerald-950/70 border border-emerald-500/40 px-3 py-1.5 rounded-xl text-emerald-300 font-medium">
+        <i class="fa-solid fa-location-dot text-emerald-400 animate-pulse"></i>
+        <span id="live-address-label">Detecting your real device GPS...</span>
+      </div>
+    </div>
+
+    <!-- Mode: Home Live GPS vs Sea Navigation Mode -->
+    <div class="flex flex-wrap items-center gap-2">
+      <div class="flex bg-slate-950 p-1 rounded-xl border border-slate-800 text-xs">
+        <button onclick="setGPSLocationMode('device')" id="btn-mode-device" class="px-3 py-1 rounded-lg bg-emerald-600 text-white font-bold transition flex items-center gap-1.5">
+          <i class="fa-solid fa-house-chimney"></i> <span id="lbl-mode-home">My Real Home GPS</span>
+        </button>
+        <button onclick="setGPSLocationMode('sea')" id="btn-mode-sea" class="px-3 py-1 rounded-lg text-slate-400 hover:text-white font-bold transition flex items-center gap-1.5">
+          <i class="fa-solid fa-ship"></i> <span id="lbl-mode-sea">Sea Navigation Mode</span>
+        </button>
+      </div>
+
+      <!-- Quick Preset Dropdown for Testing -->
+      <select id="harbor-preset-select" onchange="selectLocationPreset(this.value)" class="bg-slate-950 text-cyan-300 border border-cyan-800/60 rounded-lg px-2 py-1 text-xs focus:outline-none">
+        <option value="auto" selected>📍 Auto Device GPS</option>
+        <option value="rameswaram">⛵ Palk Strait Sea (Rameswaram)</option>
+        <option value="mandapam">⛵ Mandapam Coast Guard Base</option>
+        <option value="dhanushkodi">⚠️ Near Boundary (Dhanushkodi)</option>
+        <option value="chennai">🏠 Chennai Harbor / City</option>
+      </select>
+    </div>
+  </div>
+
+  <!-- INTERACTIVE SCENARIOS BAR (5-Min Warning & Continuous Siren) -->
+  <div class="max-w-7xl mx-auto bg-gradient-to-r from-slate-900 via-slate-850 to-slate-900 border border-slate-800 p-3 sm:p-4 rounded-2xl shadow-xl flex flex-col md:flex-row items-center justify-between gap-3 mb-6" id="scenario-bar">
+    <div class="flex items-center gap-3">
+      <div class="w-8 h-8 rounded-lg bg-indigo-950 border border-indigo-500/30 flex items-center justify-center text-indigo-400">
+        <i class="fa-solid fa-gamepad"></i>
+      </div>
+      <div>
+        <h2 class="text-xs uppercase tracking-wider text-slate-400 font-bold" id="lbl-scenario-title">Boundary Alert & Safety Scenarios</h2>
+        <p class="text-xs text-slate-200" id="lbl-scenario-subtitle">Test 5-Minute Warning & Border Breach Siren:</p>
+      </div>
+    </div>
+
+    <div class="flex flex-wrap items-center gap-2">
+      <button onclick="loadScenario('safe')" class="px-2.5 py-1.5 rounded-lg text-xs font-semibold bg-emerald-950/60 border border-emerald-500/40 text-emerald-300 hover:bg-emerald-900/60 transition flex items-center gap-1.5">
+        <span class="w-2 h-2 rounded-full bg-emerald-400"></span> <span id="lbl-sc-safe">1. Safe Waters</span>
+      </button>
+      <button onclick="loadScenario('warning_5min')" class="px-2.5 py-1.5 rounded-lg text-xs font-semibold bg-amber-950/80 border border-amber-500 text-amber-200 hover:bg-amber-900 transition flex items-center gap-1.5 animate-pulse">
+        <i class="fa-solid fa-bell text-amber-400"></i> <span id="lbl-sc-5min">2. 5-Minute Early Warning</span>
+      </button>
+      <button onclick="loadScenario('breach_siren')" class="px-2.5 py-1.5 rounded-lg text-xs font-semibold bg-rose-950/90 border border-rose-500 text-rose-100 hover:bg-rose-900 transition flex items-center gap-1.5 animate-bounce">
+        <i class="fa-solid fa-radiation text-rose-400"></i> <span id="lbl-sc-breach">3. Border Crossed (Siren Sound!)</span>
+      </button>
+      <button onclick="loadScenario('weather')" class="px-2.5 py-1.5 rounded-lg text-xs font-semibold bg-blue-950/60 border border-blue-500/40 text-blue-300 hover:bg-blue-900/60 transition flex items-center gap-1.5">
+        <i class="fa-solid fa-water"></i> <span id="lbl-sc-weather">4. Rough Weather</span>
+      </button>
+      <button onclick="loadScenario('sos')" class="px-2.5 py-1.5 rounded-lg text-xs font-semibold bg-red-950 border border-red-600 text-red-100 hover:bg-red-900 transition flex items-center gap-1.5">
+        <i class="fa-solid fa-triangle-exclamation text-red-400"></i> <span id="lbl-sc-sos">5. Emergency SOS</span>
+      </button>
+    </div>
+  </div>
+
+  <!-- MAIN STAGE: REAL PHONE PROTOTYPE + RESCUE DASHBOARD -->
+  <main class="max-w-7xl mx-auto grid grid-cols-1 lg:grid-cols-12 gap-8 items-start justify-center">
+
+    <!-- REALISTIC SMARTPHONE FRAME -->
+    <div id="phone-column" class="lg:col-span-12 flex flex-col items-center justify-center transition-all duration-300">
+      
+      <div id="phone-device-frame" class="relative w-[385px] sm:w-[400px] h-[855px] rounded-[52px] p-[12px] bg-gradient-to-b from-slate-700 via-slate-800 to-slate-900 phone-shadow-dark border-4 border-slate-600/70 select-none transition-all duration-300">
+        
+        <!-- Physical Buttons -->
+        <div class="absolute -left-[16px] top-[140px] w-[5px] h-[34px] bg-amber-500/90 rounded-l-md cursor-pointer hover:bg-amber-400 transition" title="Action Button (Emergency SOS)" onclick="triggerEmergencySOS()"></div>
+        <div class="absolute -left-[16px] top-[200px] w-[5px] h-[50px] bg-slate-600 rounded-l-md"></div>
+        <div class="absolute -left-[16px] top-[260px] w-[5px] h-[50px] bg-slate-600 rounded-l-md"></div>
+        <div class="absolute -right-[16px] top-[220px] w-[5px] h-[75px] bg-slate-600 rounded-r-md cursor-pointer" onclick="toggleThemeMode()" title="Toggle Day/Night Mode"></div>
+
+        <!-- Phone Inner Screen -->
+        <div id="phone-screen" class="relative w-full h-full bg-slate-950 rounded-[42px] overflow-hidden flex flex-col border border-slate-800 text-slate-100 transition-colors duration-300">
+
+          <!-- EMERGENCY FULL-SCREEN OVERLAY: 5-MIN WARNING OR BORDER BREACH SIREN -->
+          <div id="boundary-alert-modal" class="hidden absolute inset-0 z-50 alert-strobe bg-red-950/95 flex flex-col items-center justify-between p-6 text-center backdrop-blur-md">
+            <div class="w-full flex items-center justify-between pt-6 text-red-200 text-xs">
+              <span class="flex items-center gap-1 font-bold tracking-wider" id="modal-imbl-header"><i class="fa-solid fa-triangle-exclamation"></i> MARITIME BOUNDARY ALERT</span>
+              <span class="px-2 py-0.5 rounded bg-red-900 border border-red-500 font-mono font-bold" id="modal-alert-level-badge">CRITICAL</span>
+            </div>
+
+            <div class="my-auto space-y-3">
+              <div class="w-20 h-20 mx-auto rounded-full bg-red-600/30 border-2 border-red-500 flex items-center justify-center animate-ping">
+                <i class="fa-solid fa-radiation text-3xl text-red-400"></i>
+              </div>
+
+              <div class="space-y-1">
+                <p class="text-xs uppercase tracking-widest text-red-300 font-semibold" id="modal-warning-subtitle">Boundary Alert System</p>
+                <h2 class="text-2xl sm:text-3xl font-extrabold text-white tracking-wide" id="modal-countdown-title">
+                  <span id="modal-crossing-in">TIME TO CROSS:</span> <span id="countdown-timer" class="text-yellow-300 font-mono">05:00 min</span>
+                </h2>
+                <p id="modal-alert-message" class="text-sm font-bold text-amber-200 leading-snug px-2">
+                  WARNING: You are 5 minutes away from the Maritime Boundary Line! Turn back immediately!
+                </p>
+                <p id="modal-alert-submessage" class="text-xs text-red-200/90 font-mono">
+                  Continuous siren active. Steer 180° Port back into Indian Territorial Waters.
+                </p>
+              </div>
+
+              <!-- Safe Escape Heading Direction Compass -->
+              <div class="bg-red-950/80 border border-red-500/40 rounded-xl p-3 max-w-[280px] mx-auto text-left">
+                <div class="flex items-center gap-3">
+                  <div class="w-12 h-12 rounded-full bg-black/60 border border-yellow-400 flex items-center justify-center">
+                    <i class="fa-solid fa-arrow-down text-yellow-400 text-xl animate-bounce"></i>
+                  </div>
+                  <div>
+                    <div class="text-[10px] uppercase text-red-300 font-bold" id="modal-escape-heading-title">Safe Return Heading</div>
+                    <div class="text-sm font-bold text-white" id="modal-escape-direction">STEER 265° W (Mandapam Harbor)</div>
+                    <div class="text-[11px] text-yellow-300"><span id="modal-escape-buffer-label">Distance:</span> <span id="alert-distance" class="font-bold">1,250 m</span></div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div class="w-full space-y-2 pb-6">
+              <button onclick="steerAwayFromBoundary()" class="w-full py-3.5 rounded-xl bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white font-bold text-sm shadow-lg shadow-emerald-900/50 flex items-center justify-center gap-2" id="btn-turn-back">
+                <i class="fa-solid fa-rotate-left"></i> Turn Back to Safe Waters
+              </button>
+              <div class="flex gap-2">
+                <button onclick="silenceAlertForSecs()" class="flex-1 py-2 rounded-lg bg-red-900/60 border border-red-700 text-xs text-red-200 font-semibold" id="btn-mute-15s">
+                  <i class="fa-solid fa-bell-slash"></i> Silence Siren
+                </button>
+                <button onclick="triggerEmergencySOS()" class="flex-1 py-2 rounded-lg bg-yellow-600 hover:bg-yellow-500 text-black font-bold text-xs" id="btn-modal-sos">
+                  <i class="fa-solid fa-life-ring"></i> SOS Alert
+                </button>
+              </div>
+            </div>
+          </div>
+
+          <!-- Dynamic Island & Status Bar -->
+          <div class="pt-3 pb-1 px-6 flex items-center justify-between text-[11px] font-medium text-slate-400 z-30" id="phone-top-bar">
+            <span id="phone-clock" class="font-mono text-slate-200 font-bold">14:20</span>
+
+            <div id="dynamic-island" class="relative group cursor-pointer bg-black px-4 py-1 rounded-full border border-slate-800 flex items-center gap-2 shadow-inner transition-all duration-300 hover:scale-105">
+              <span id="island-dot" class="w-2 h-2 rounded-full bg-emerald-500"></span>
+              <span id="island-text" class="text-[10px] font-mono text-slate-300">THIRAIX Active</span>
+              <i id="island-wave-icon" class="fa-solid fa-water text-[9px] text-cyan-400"></i>
+            </div>
+
+            <div class="flex items-center gap-2 text-slate-300 text-[10px]">
+              <span id="network-icon-container" class="flex items-center gap-1 text-cyan-400">
+                <i id="phone-net-icon" class="fa-solid fa-signal"></i>
+                <span id="phone-net-label" class="text-[9px]">4G</span>
+              </span>
+              <i class="fa-solid fa-location-crosshairs text-emerald-400" title="GPS Lock"></i>
+              <div class="flex items-center text-[10px] text-slate-300 font-mono">
+                <span>94%</span>
+                <i class="fa-solid fa-battery-three-quarters text-emerald-400 ml-1"></i>
+              </div>
+            </div>
+          </div>
+
+          <!-- Vessel Info & In-Phone Language Selector -->
+          <div class="px-4 py-2 bg-slate-900/90 border-b border-slate-800 flex items-center justify-between gap-2 z-20" id="vessel-bar">
+            <div>
+              <div class="flex items-center gap-1.5">
+                <span class="text-xs font-bold text-white tracking-wide" id="vessel-id-tag">IND-TN-08-4421</span>
+                <span class="text-[9px] px-1.5 py-0.2 rounded bg-cyan-950 text-cyan-300 border border-cyan-800 font-mono font-bold" id="vessel-name-tag">Meenatchi</span>
+              </div>
+              <div class="text-[10px] text-slate-400 flex items-center gap-2">
+                <span><i class="fa-solid fa-users text-slate-500 mr-1"></i><span id="lbl-crew-count">5 Crew</span></span>
+                <span>•</span>
+                <span id="vessel-speed" class="text-cyan-300 font-mono font-medium">8.4 kts</span>
+              </div>
+            </div>
+
+            <div class="relative">
+              <select id="lang-selector-phone" onchange="switchSystemLanguage(this.value)" class="bg-slate-800 border border-cyan-500/50 rounded-lg px-2 py-1 text-[11px] text-cyan-300 font-bold focus:outline-none focus:border-cyan-400 cursor-pointer shadow">
+                <option value="en" selected>English</option>
+                <option value="ta">தமிழ்</option>
+                <option value="hi">हिन्दी</option>
+                <option value="te">తెలుగు</option>
+                <option value="kn">ಕನ್ನಡ</option>
+                <option value="ml">മലയാളം</option>
+                <option value="bn">বাংলা</option>
+                <option value="or">ଓଡ଼ିଆ</option>
+                <option value="pa">ਪੰਜਾਬੀ</option>
+                <option value="ur">اردو</option>
+              </select>
+            </div>
+          </div>
+
+          <!-- Phone Inner Content Container -->
+          <div id="phone-content" class="flex-1 overflow-y-auto relative p-3 space-y-3">
+
+            <!-- TAB 1: RADAR / NAVIGATION -->
+            <div id="tab-nav-view" class="space-y-3">
+              
+              <!-- Location Mode Indicator Badge -->
+              <div class="bg-slate-900 border border-slate-800 p-2 rounded-xl flex items-center justify-between text-xs" id="mode-status-card">
+                <div class="flex items-center gap-2">
+                  <span class="w-2.5 h-2.5 rounded-full bg-emerald-400 animate-ping"></span>
+                  <span class="font-bold text-slate-200" id="lbl-current-loc-mode">Mode: Live Real Device Location</span>
+                </div>
+                <span class="text-[10px] text-cyan-400 font-mono" id="lbl-current-coords-chip">09°17'N 79°18'E</span>
+              </div>
+
+              <!-- Interactive Nautical Radar & Map Canvas -->
+              <div class="relative w-full h-[220px] bg-slate-900 rounded-2xl overflow-hidden border border-cyan-900/50 shadow-inner" id="radar-container">
+                <canvas id="radar-canvas" width="370" height="220" class="w-full h-full block"></canvas>
+                
+                <div class="absolute inset-0 pointer-events-none flex items-center justify-center">
+                  <div class="w-[200px] h-[200px] rounded-full border border-cyan-500/20"></div>
+                  <div class="w-[120px] h-[120px] rounded-full border border-cyan-500/20 absolute"></div>
+                </div>
+
+                <div class="absolute top-2 left-2 bg-slate-950/85 backdrop-blur border border-slate-700/80 px-2 py-1 rounded text-[10px] font-mono text-cyan-300">
+                  <span id="gps-lat">09°17'42" N</span>, <span id="gps-lon">79°18'24" E</span>
+                </div>
+
+                <div class="absolute top-2 right-2 bg-slate-950/85 backdrop-blur border border-slate-700/80 px-2 py-1 rounded text-[10px] font-mono text-amber-300 flex items-center gap-1">
+                  <i class="fa-solid fa-compass text-amber-400"></i>
+                  <span id="heading-deg">112° ESE</span>
+                </div>
+
+                <!-- Distance & 5-Min Early Warning Indicator -->
+                <div class="absolute bottom-2 inset-x-2 bg-slate-950/90 backdrop-blur border border-slate-800 rounded-xl p-2 flex items-center justify-between" id="radar-bottom-banner">
+                  <div>
+                    <div class="text-[9px] uppercase tracking-wider text-slate-400 font-semibold" id="lbl-dist-boundary">Distance to IMBL (Boundary)</div>
+                    <div class="text-sm font-bold text-white font-mono flex items-center gap-1.5">
+                      <span id="radar-dist-val" class="text-cyan-400">1,850 m</span>
+                      <span id="radar-time-val" class="text-[10px] text-slate-400 font-normal">(Safe zone)</span>
+                    </div>
+                  </div>
+                  <button onclick="loadScenario('warning_5min')" class="px-2.5 py-1 rounded bg-amber-950 hover:bg-amber-900 border border-amber-600 text-amber-300 text-[10px] font-bold">
+                    <i class="fa-solid fa-clock"></i> <span id="lbl-5m-test-btn">5-Min Warning</span>
+                  </button>
+                </div>
+              </div>
+
+              <!-- Boat Position Steer Slider -->
+              <div class="bg-slate-900/80 border border-slate-800 p-2.5 rounded-xl space-y-2" id="boat-steer-card">
+                <div class="flex items-center justify-between text-xs">
+                  <span class="text-slate-300 font-medium text-[11px]" id="lbl-boat-steer">Boat Navigation Simulator:</span>
+                  <span class="text-cyan-400 font-mono text-[11px]" id="sim-position-status">Indian Territorial Waters</span>
+                </div>
+                <div class="flex items-center gap-2">
+                  <span class="text-[10px] text-emerald-400 font-bold" id="lbl-coast-steer">Coast</span>
+                  <input type="range" id="boat-pos-slider" min="0" max="100" value="30" oninput="updateBoatFromSlider(this.value)" class="w-full accent-cyan-400 h-1.5 bg-slate-700 rounded-lg cursor-pointer">
+                  <span class="text-[10px] text-rose-400 font-bold" id="lbl-imbl-steer">Border Line</span>
+                </div>
+              </div>
+
+              <!-- Telemetry Cards -->
+              <div class="grid grid-cols-2 gap-2 text-xs">
+                <div class="bg-slate-900/90 border border-slate-800/80 p-2.5 rounded-xl flex items-center gap-2.5" id="tele-wave-card">
+                  <div class="w-9 h-9 rounded-lg bg-blue-950 border border-blue-500/30 flex items-center justify-center text-blue-400">
+                    <i class="fa-solid fa-water"></i>
+                  </div>
+                  <div>
+                    <div class="text-[9px] uppercase text-slate-400" id="lbl-wave-height">Wave Height</div>
+                    <div class="font-bold text-white font-mono" id="nav-wave-stat">1.4 m <span class="text-[10px] text-emerald-400 font-normal" id="lbl-wave-cond-moderate">Moderate</span></div>
+                  </div>
+                </div>
+
+                <div class="bg-slate-900/90 border border-slate-800/80 p-2.5 rounded-xl flex items-center gap-2.5" id="tele-wind-card">
+                  <div class="w-9 h-9 rounded-lg bg-teal-950 border border-teal-500/30 flex items-center justify-center text-teal-400">
+                    <i class="fa-solid fa-wind"></i>
+                  </div>
+                  <div>
+                    <div class="text-[9px] uppercase text-slate-400" id="lbl-wind-speed">Wind Speed</div>
+                    <div class="font-bold text-white font-mono" id="nav-wind-stat">18 kts <span class="text-[10px] text-emerald-400 font-normal" id="lbl-wind-cond-normal">Normal</span></div>
+                  </div>
+                </div>
+              </div>
+
+              <!-- AI Advisory Card -->
+              <div id="ai-quick-card" class="bg-gradient-to-r from-cyan-950/40 to-slate-900 border border-cyan-800/40 p-3 rounded-xl flex items-center justify-between gap-3">
+                <div class="flex items-center gap-2.5">
+                  <div class="w-8 h-8 rounded-full bg-cyan-900/50 flex items-center justify-center text-cyan-300">
+                    <i class="fa-solid fa-brain"></i>
+                  </div>
+                  <div>
+                    <div class="text-[10px] uppercase tracking-wider text-cyan-300 font-bold" id="lbl-ai-status">AI Risk: LOW (Safe)</div>
+                    <p class="text-[11px] text-slate-300 leading-tight" id="lbl-ai-summary">Boundary distance is safe. Favorable weather for fishing.</p>
+                  </div>
+                </div>
+                <button onclick="speakCurrentAdvisory()" class="w-8 h-8 rounded-lg bg-cyan-800 hover:bg-cyan-700 flex items-center justify-center text-white text-xs shadow" title="Voice Advisory">
+                  <i class="fa-solid fa-volume-high"></i>
+                </button>
+              </div>
+            </div>
+
+            <!-- TAB 2: WEATHER & SEA -->
+            <div id="tab-weather-view" class="hidden space-y-3">
+              <div class="relative w-full h-[180px] bg-slate-950 rounded-2xl overflow-hidden border border-cyan-900/50 shadow-inner">
+                <canvas id="weather-anim-canvas" width="370" height="180" class="w-full h-full block"></canvas>
+                
+                <div class="absolute top-2 inset-x-2 flex items-center justify-between">
+                  <span id="weather-state-chip" class="px-2 py-0.5 rounded-full bg-sky-950/80 border border-sky-400/40 text-[10px] text-sky-200 font-semibold backdrop-blur">
+                    <i class="fa-solid fa-cloud-sun text-yellow-400 mr-1"></i> Part-Cloudy Sea
+                  </span>
+                  <span id="weather-sea-temp" class="text-[10px] font-mono text-cyan-300 bg-slate-900/80 px-2 py-0.5 rounded backdrop-blur">
+                    SST: 28.5°C
+                  </span>
+                </div>
+
+                <div class="absolute bottom-2 left-2 bg-slate-950/80 px-2.5 py-1 rounded-lg border border-slate-700 text-xs backdrop-blur">
+                  <div class="text-[9px] uppercase text-slate-400" id="lbl-live-wave-sim">Live Wave Simulation</div>
+                  <div class="font-bold text-white font-mono" id="sim-wave-val">1.2m Crest / 6.2s Period</div>
+                </div>
+              </div>
+
+              <!-- Current Weather Telemetry Cards -->
+              <div class="grid grid-cols-2 gap-2 text-xs">
+                <div class="bg-slate-900/80 border border-slate-800 p-3 rounded-xl space-y-1" id="card-wind-box">
+                  <div class="flex items-center justify-between text-slate-400 text-[10px]">
+                    <span id="lbl-wind-vel-box">WIND VELOCITY</span>
+                    <i class="fa-solid fa-wind text-teal-400"></i>
+                  </div>
+                  <div class="text-lg font-bold text-white font-mono" id="card-wind-val">19 kts</div>
+                  <div class="text-[10px] text-emerald-400" id="card-wind-sub">Beaufort: Force 4</div>
+                </div>
+
+                <div class="bg-slate-900/80 border border-slate-800 p-3 rounded-xl space-y-1" id="card-wave-box">
+                  <div class="flex items-center justify-between text-slate-400 text-[10px]">
+                    <span id="lbl-wave-ht-box">WAVE HEIGHT</span>
+                    <i class="fa-solid fa-water text-cyan-400"></i>
+                  </div>
+                  <div class="text-lg font-bold text-white font-mono" id="card-wave-val">1.3 m</div>
+                  <div class="text-[10px] text-emerald-400" id="card-wave-sub">Safe for Fishing Boats</div>
+                </div>
+
+                <div class="bg-slate-900/80 border border-slate-800 p-3 rounded-xl space-y-1" id="card-rain-box">
+                  <div class="flex items-center justify-between text-slate-400 text-[10px]">
+                    <span id="lbl-rain-rate-box">RAINFALL RATE</span>
+                    <i class="fa-solid fa-cloud-showers-heavy text-blue-400"></i>
+                  </div>
+                  <div class="text-lg font-bold text-white font-mono" id="card-rain-val">2 mm/h</div>
+                  <div class="text-[10px] text-slate-400" id="card-rain-sub">Visibility: > 8 NM</div>
+                </div>
+
+                <div class="bg-slate-900/80 border border-slate-800 p-3 rounded-xl space-y-1" id="card-storm-box">
+                  <div class="flex items-center justify-between text-slate-400 text-[10px]">
+                    <span id="lbl-storm-alert-box">STORM ALERT</span>
+                    <i class="fa-solid fa-bolt text-amber-400"></i>
+                  </div>
+                  <div class="text-base font-bold text-emerald-300 font-mono" id="card-storm-val">NIL</div>
+                  <div class="text-[10px] text-slate-400" id="card-storm-sub">No Cyclone Warning</div>
+                </div>
+              </div>
+
+              <!-- NEXT-DAY WEATHER REPORT -->
+              <div class="bg-gradient-to-r from-blue-950/50 via-slate-900 to-indigo-950/50 border border-blue-500/40 p-3 rounded-xl space-y-2 shadow-md" id="next-day-forecast-box">
+                <div class="flex items-center justify-between">
+                  <div class="flex items-center gap-2">
+                    <i class="fa-solid fa-calendar-week text-cyan-400"></i>
+                    <span class="text-xs font-bold text-white" id="lbl-next-day-title">Next-Day Marine Weather Forecast (Tomorrow)</span>
+                  </div>
+                  <span class="px-2 py-0.5 rounded bg-blue-900/70 border border-blue-400/40 text-[9px] text-blue-200 font-mono" id="lbl-next-day-date">Mon, 28 Sep</span>
+                </div>
+
+                <div class="grid grid-cols-3 gap-2 text-center text-[10px]">
+                  <div class="bg-slate-950/70 p-2 rounded-lg border border-slate-800">
+                    <div class="text-slate-400" id="lbl-fc-temp">Temperature</div>
+                    <div class="text-sm font-bold text-white font-mono" id="val-fc-temp">31°C / 26°C</div>
+                    <div class="text-amber-400 text-[9px]" id="lbl-fc-temp-cond">Partly Cloudy</div>
+                  </div>
+                  <div class="bg-slate-950/70 p-2 rounded-lg border border-slate-800">
+                    <div class="text-slate-400" id="lbl-fc-wind">Expected Wind</div>
+                    <div class="text-sm font-bold text-teal-300 font-mono" id="val-fc-wind">24 knots</div>
+                    <div class="text-slate-400 text-[9px]" id="lbl-fc-wind-dir">SW Gusts</div>
+                  </div>
+                  <div class="bg-slate-950/70 p-2 rounded-lg border border-slate-800">
+                    <div class="text-slate-400" id="lbl-fc-wave">Expected Wave</div>
+                    <div class="text-sm font-bold text-cyan-300 font-mono" id="val-fc-wave">2.1 meters</div>
+                    <div class="text-amber-300 text-[9px]" id="lbl-fc-wave-cond">Moderate Rough</div>
+                  </div>
+                </div>
+
+                <div class="p-2 rounded-lg bg-slate-950/90 border border-blue-900/60 text-[10px] text-slate-300 flex items-start gap-2">
+                  <i class="fa-solid fa-triangle-exclamation text-amber-400 mt-0.5"></i>
+                  <div>
+                    <span class="font-bold text-amber-300" id="lbl-fc-advisory-title">Tomorrow Marine Advisory:</span>
+                    <span id="lbl-fc-advisory-text">Safe for mechanized boats till 14:00 hrs. Expect afternoon wind gusts and isolated squalls. Return before 17:00 hrs.</span>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Weather Simulation Buttons -->
+              <div class="flex gap-2">
+                <button onclick="setWeatherState('calm')" class="flex-1 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-[11px] text-slate-300 border border-slate-700" id="btn-weather-calm">
+                  ☀️ Calm Sea
+                </button>
+                <button onclick="setWeatherState('rough')" class="flex-1 py-1.5 rounded-lg bg-amber-950/60 hover:bg-amber-900/60 text-[11px] text-amber-300 border border-amber-600/40" id="btn-weather-rough">
+                  🌊 Rough (2.8m)
+                </button>
+                <button onclick="setWeatherState('storm')" class="flex-1 py-1.5 rounded-lg bg-rose-950/60 hover:bg-rose-900/60 text-[11px] text-rose-300 border border-rose-600/40" id="btn-weather-storm">
+                  ⛈️ Storm Surge
+                </button>
+              </div>
+            </div>
+
+            <!-- TAB 3: AI RISK PREDICTION -->
+            <div id="tab-risk-view" class="hidden space-y-3">
+              <div class="bg-slate-900/90 border border-slate-800 rounded-2xl p-4 text-center space-y-3" id="risk-gauge-card">
+                <div class="flex items-center justify-between text-xs text-slate-400">
+                  <span class="font-bold uppercase tracking-wider" id="lbl-ai-risk-title">AI Risk Prediction Model</span>
+                  <span class="text-cyan-400 font-mono">Ensemble Random Forest v4</span>
+                </div>
+
+                <div class="relative w-36 h-36 mx-auto flex items-center justify-center">
+                  <svg class="w-full h-full -rotate-90" viewBox="0 0 100 100">
+                    <circle cx="50" cy="50" r="40" stroke="rgba(51, 65, 85, 0.4)" stroke-width="8" fill="none"/>
+                    <circle id="risk-gauge-circle" cx="50" cy="50" r="40" stroke="#10b981" stroke-width="8" stroke-dasharray="251.2" stroke-dashoffset="200" stroke-linecap="round" fill="none" class="transition-all duration-700"/>
+                  </svg>
+                  <div class="absolute inset-0 flex flex-col items-center justify-center">
+                    <span id="risk-score-display" class="text-3xl font-extrabold text-white font-mono">18</span>
+                    <span id="risk-level-badge" class="text-[10px] font-bold uppercase tracking-wider text-emerald-400">LOW RISK</span>
+                  </div>
+                </div>
+
+                <div class="space-y-2 text-left text-[11px]">
+                  <div>
+                    <div class="flex justify-between text-slate-400 mb-0.5">
+                      <span id="lbl-risk-factor-boundary">Boundary Proximity Risk</span>
+                      <span id="risk-bar-boundary-val" class="font-mono text-cyan-300">12%</span>
+                    </div>
+                    <div class="w-full bg-slate-800 rounded-full h-1.5">
+                      <div id="risk-bar-boundary" class="bg-cyan-500 h-1.5 rounded-full" style="width: 12%"></div>
+                    </div>
+                  </div>
+
+                  <div>
+                    <div class="flex justify-between text-slate-400 mb-0.5">
+                      <span id="lbl-risk-factor-wave">Wave Severity Factor</span>
+                      <span id="risk-bar-wave-val" class="font-mono text-blue-300">24%</span>
+                    </div>
+                    <div class="w-full bg-slate-800 rounded-full h-1.5">
+                      <div id="risk-bar-wave" class="bg-blue-500 h-1.5 rounded-full" style="width: 24%"></div>
+                    </div>
+                  </div>
+
+                  <div>
+                    <div class="flex justify-between text-slate-400 mb-0.5">
+                      <span id="lbl-risk-factor-wind">Wind & Gale Intensity</span>
+                      <span id="risk-bar-wind-val" class="font-mono text-teal-300">18%</span>
+                    </div>
+                    <div class="w-full bg-slate-800 rounded-full h-1.5">
+                      <div id="risk-bar-wind" class="bg-teal-500 h-1.5 rounded-full" style="width: 18%"></div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Safe Return Guidance -->
+              <div class="bg-slate-900 border border-slate-800 p-3 rounded-xl space-y-2" id="safe-return-card">
+                <div class="flex items-center gap-2 text-xs font-bold text-cyan-300">
+                  <i class="fa-solid fa-route"></i>
+                  <span id="lbl-safe-return-title">AI Safe Return Guidance Course</span>
+                </div>
+                <div class="text-[11px] text-slate-300 bg-slate-950 p-2.5 rounded-lg border border-slate-800/80">
+                  <div class="font-bold text-white mb-1" id="lbl-rec-port-name">Recommended Port: Mandapam Fishery Harbor</div>
+                  <div class="grid grid-cols-2 gap-1 text-[10px] text-slate-400">
+                    <span>• Course: 254° WSW</span>
+                    <span>• Distance: 6.8 NM</span>
+                    <span>• Transit: 48 Mins</span>
+                    <span>• Fuel Est: ~14L</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- TAB 4: MULTILINGUAL AI VOICE ASSISTANT (FIXED FOR TAMIL & ALL LANGUAGES) -->
+            <div id="tab-voice-view" class="hidden space-y-3">
+              <div class="bg-slate-900/90 border border-slate-800 rounded-2xl p-4 text-center space-y-3" id="voice-assistant-card">
+                <div class="flex items-center justify-between text-xs text-slate-400">
+                  <span class="font-bold uppercase tracking-wider" id="lbl-ai-voice-title">THIRAIX AI Voice Assistant</span>
+                  <span id="voice-lang-chip" class="px-2 py-0.5 rounded bg-cyan-950 border border-cyan-600/40 text-[10px] text-cyan-300 font-bold">English</span>
+                </div>
+
+                <!-- Animated Wave Visualizer -->
+                <div id="audio-wave-visualizer" class="h-16 flex items-center justify-center gap-1.5 px-4 bg-slate-950 rounded-xl border border-slate-800">
+                  <span class="w-1.5 bg-cyan-400 rounded-full h-4 transition-all duration-150"></span>
+                  <span class="w-1.5 bg-cyan-400 rounded-full h-8 transition-all duration-150"></span>
+                  <span class="w-1.5 bg-cyan-400 rounded-full h-12 transition-all duration-150"></span>
+                  <span class="w-1.5 bg-cyan-400 rounded-full h-6 transition-all duration-150"></span>
+                  <span class="w-1.5 bg-cyan-400 rounded-full h-10 transition-all duration-150"></span>
+                  <span class="w-1.5 bg-cyan-400 rounded-full h-5 transition-all duration-150"></span>
+                </div>
+
+                <!-- Mic Button with Immediate Response -->
+                <button id="btn-mic" onclick="toggleVoiceRecognition()" class="w-16 h-16 mx-auto rounded-full bg-gradient-to-tr from-cyan-600 to-blue-600 hover:from-cyan-500 hover:to-blue-500 border-2 border-cyan-300 flex items-center justify-center text-white text-xl shadow-lg shadow-cyan-600/40 transition">
+                  <i id="mic-icon" class="fa-solid fa-microphone"></i>
+                </button>
+                <p id="mic-status-label" class="text-xs text-slate-300 font-medium">Tap Microphone to Speak</p>
+
+                <!-- Voice Query Action Chips -->
+                <div class="space-y-1.5 pt-2">
+                  <div class="text-[10px] text-slate-400 font-medium uppercase" id="lbl-or-click-question">Or Click a Question to Hear AI Voice:</div>
+                  <div class="flex flex-col gap-1.5 text-xs text-left">
+                    <button onclick="handleVoiceQueryText('weather')" class="p-2 rounded-lg bg-slate-800/80 hover:bg-slate-700/80 border border-slate-700 text-cyan-200 flex items-center justify-between" id="chip-q-weather">
+                      <span>"What is current weather and wave condition?"</span>
+                      <i class="fa-solid fa-volume-high text-[10px] text-cyan-400"></i>
+                    </button>
+                    <button onclick="handleVoiceQueryText('tomorrow')" class="p-2 rounded-lg bg-slate-800/80 hover:bg-slate-700/80 border border-slate-700 text-teal-200 flex items-center justify-between" id="chip-q-tomorrow">
+                      <span>"What is tomorrow's weather forecast?"</span>
+                      <i class="fa-solid fa-volume-high text-[10px] text-teal-400"></i>
+                    </button>
+                    <button onclick="handleVoiceQueryText('boundary')" class="p-2 rounded-lg bg-slate-800/80 hover:bg-slate-700/80 border border-slate-700 text-amber-200 flex items-center justify-between" id="chip-q-boundary">
+                      <span>"What is distance to boundary line?"</span>
+                      <i class="fa-solid fa-volume-high text-[10px] text-amber-400"></i>
+                    </button>
+                    <button onclick="handleVoiceQueryText('harbor')" class="p-2 rounded-lg bg-slate-800/80 hover:bg-slate-700/80 border border-slate-700 text-emerald-200 flex items-center justify-between" id="chip-q-harbor">
+                      <span>"Where is nearest safe harbor?"</span>
+                      <i class="fa-solid fa-volume-high text-[10px] text-emerald-400"></i>
+                    </button>
+                  </div>
+                </div>
+
+                <!-- Conversation Response Box -->
+                <div id="voice-response-card" class="bg-cyan-950/40 border border-cyan-800/50 p-3 rounded-xl text-left text-xs space-y-1.5">
+                  <div class="text-[10px] text-cyan-400 font-bold flex items-center gap-1.5">
+                    <i class="fa-solid fa-robot"></i> <span id="lbl-assistant-reply-title">THIRAIX AI Marine Voice Assistant:</span>
+                  </div>
+                  <div id="voice-response-text" class="text-slate-100 text-[11px] leading-relaxed font-medium">
+                    Hello! I am your THIRAIX Maritime Safety Assistant. Ask me about weather, tomorrow's forecast, or boundary distance.
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- TAB 5: LORA OFFLINE & SOS -->
+            <div id="tab-sos-view" class="hidden space-y-3">
+              <div class="bg-slate-900 border border-slate-800 rounded-2xl p-3.5 space-y-3" id="lora-card">
+                <div class="flex items-center justify-between">
+                  <span class="text-xs font-bold text-slate-300 flex items-center gap-1.5">
+                    <i class="fa-solid fa-satellite-dish text-purple-400"></i>
+                    <span id="lbl-lora-title">LoRa & Satellite Mesh (Zero-Internet Mode)</span>
+                  </span>
+                  <button id="btn-toggle-network" onclick="toggleNetworkConnection()" class="px-2 py-0.5 rounded text-[10px] font-bold bg-cyan-950 border border-cyan-500 text-cyan-300">
+                    Toggle 4G / LoRa
+                  </button>
+                </div>
+
+                <div class="p-2.5 rounded-xl bg-slate-950 border border-slate-800 font-mono text-[10px] space-y-1">
+                  <div class="flex justify-between">
+                    <span class="text-slate-400" id="lbl-lora-status">Protocol Link:</span>
+                    <span id="lora-status-text" class="text-emerald-400 font-bold">4G Cellular Primary (LoRa Standby)</span>
+                  </div>
+                  <div class="flex justify-between">
+                    <span class="text-slate-400">LoRa RF Band:</span>
+                    <span class="text-slate-200">868.10 MHz (Spread Factor 12)</span>
+                  </div>
+                  <div class="flex justify-between">
+                    <span class="text-slate-400">Satellite Relay:</span>
+                    <span class="text-purple-300">ISRO NavIC Messaging Sync OK</span>
+                  </div>
+                  <div class="flex justify-between">
+                    <span class="text-slate-400" id="lbl-telemetry-packets">Telemetry Packets Sent:</span>
+                    <span id="lora-packet-count" class="text-cyan-400">142 packets</span>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Big Tactical SOS Distress Button -->
+              <div class="bg-gradient-to-b from-red-950/60 to-slate-900 border border-red-800/60 rounded-2xl p-5 text-center space-y-3" id="sos-card">
+                <div class="text-xs uppercase tracking-wider text-red-300 font-bold" id="lbl-sos-distress-title">
+                  EMERGENCY DISTRESS BEACON (SOS)
+                </div>
+                <p class="text-[11px] text-slate-300 leading-snug" id="lbl-sos-desc">
+                  Even with zero internet, emergency distress telemetry will be transmitted to the Coast Guard via LoRa RF and NavIC Satellite Relay.
+                </p>
+
+                <div class="relative py-2 flex items-center justify-center">
+                  <button id="btn-main-sos" onclick="triggerEmergencySOS()" class="w-28 h-28 rounded-full bg-gradient-to-tr from-red-700 via-rose-600 to-red-500 hover:from-red-600 hover:to-rose-500 border-4 border-red-300 text-white font-extrabold text-2xl shadow-2xl shadow-red-700/80 active:scale-95 transition-transform flex flex-col items-center justify-center gap-1">
+                    <i class="fa-solid fa-tower-broadcast text-xl animate-bounce"></i>
+                    <span>SOS</span>
+                  </button>
+                </div>
+
+                <div id="sos-beacon-status" class="hidden text-xs text-yellow-300 font-bold bg-red-900/60 p-2 rounded-lg border border-red-500 animate-pulse">
+                  🚨 SOS BEACON BROADCASTING VIA LORA 868MHz + SATELLITE!
+                </div>
+              </div>
+            </div>
+
+          </div>
+
+          <!-- Bottom Navigation Tabs (Inside Phone) -->
+          <div class="bg-slate-900/95 border-t border-slate-800 px-2 py-2 flex items-center justify-around z-20" id="phone-bottom-nav">
+            <button onclick="switchTab('nav')" id="p-tab-nav" class="flex flex-col items-center text-cyan-400 text-[10px] font-medium transition">
+              <i class="fa-solid fa-compass text-base mb-0.5"></i>
+              <span id="lbl-tab-radar">Radar</span>
+            </button>
+            <button onclick="switchTab('weather')" id="p-tab-weather" class="flex flex-col items-center text-slate-400 hover:text-slate-200 text-[10px] font-medium transition">
+              <i class="fa-solid fa-water text-base mb-0.5"></i>
+              <span id="lbl-tab-weather">Weather</span>
+            </button>
+            <button onclick="switchTab('risk')" id="p-tab-risk" class="flex flex-col items-center text-slate-400 hover:text-slate-200 text-[10px] font-medium transition">
+              <i class="fa-solid fa-chart-pie text-base mb-0.5"></i>
+              <span id="lbl-tab-risk">AI Risk</span>
+            </button>
+            <button onclick="switchTab('voice')" id="p-tab-voice" class="flex flex-col items-center text-slate-400 hover:text-slate-200 text-[10px] font-medium transition">
+              <i class="fa-solid fa-microphone text-base mb-0.5"></i>
+              <span id="lbl-tab-voice">Voice AI</span>
+            </button>
+            <button onclick="switchTab('sos')" id="p-tab-sos" class="flex flex-col items-center text-slate-400 hover:text-slate-200 text-[10px] font-medium transition">
+              <i class="fa-solid fa-life-ring text-base mb-0.5"></i>
+              <span id="lbl-tab-sos">LoRa/SOS</span>
+            </button>
+          </div>
+
+          <!-- Bottom Home Bar -->
+          <div class="h-3 bg-slate-950 flex items-center justify-center" id="phone-home-bar">
+            <div class="w-32 h-1 bg-slate-700 rounded-full"></div>
+          </div>
+
+        </div>
+      </div>
+
+    </div>
+
+    <!-- RESCUE TEAM & COAST GUARD COMMAND DASHBOARD -->
+    <div id="dashboard-column" class="hidden lg:col-span-6 space-y-4">
+      
+      <!-- Command Header Card -->
+      <div class="bg-slate-900 border border-slate-800 rounded-2xl p-4 shadow-xl" id="dash-header-card">
+        <div class="flex flex-wrap items-center justify-between gap-2 border-b border-slate-800 pb-3 mb-3">
+          <div class="flex items-center gap-3">
+            <div class="w-10 h-10 rounded-xl bg-blue-950 border border-blue-500/40 flex items-center justify-center text-blue-400">
+              <i class="fa-solid fa-shield-halved text-lg"></i>
+            </div>
+            <div>
+              <h3 class="font-bold text-white text-sm" id="lbl-mrsc-title">Indian Coast Guard • Maritime Rescue Sub-Center (MRSC Mandapam)</h3>
+              <p class="text-xs text-slate-400" id="lbl-mrsc-sub">Palk Bay & Gulf of Mannar Coastal Vessel Surveillance Network</p>
+            </div>
+          </div>
+          <div class="flex items-center gap-2">
+            <span class="px-2.5 py-1 rounded-full bg-emerald-950 border border-emerald-500/40 text-[11px] text-emerald-300 font-mono flex items-center gap-1.5 font-bold">
+              <span class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
+              <span id="lbl-fleet-active">Fleet: 14 Active</span>
+            </span>
+          </div>
+        </div>
+
+        <div class="grid grid-cols-2 sm:grid-cols-4 gap-2 text-xs">
+          <div class="bg-slate-950 p-2.5 rounded-xl border border-slate-800/80">
+            <div class="text-[10px] text-slate-400" id="lbl-cmd-tracked">TRACKED BOATS</div>
+            <div class="text-base font-bold text-white font-mono">14 Vessels</div>
+            <div class="text-[9px] text-cyan-400">GPS/LoRa Polling 2s</div>
+          </div>
+          <div class="bg-slate-950 p-2.5 rounded-xl border border-slate-800/80">
+            <div class="text-[10px] text-slate-400" id="lbl-cmd-buffer">BOUNDARY BUFFER</div>
+            <div class="text-base font-bold text-yellow-400 font-mono" id="dash-buffer-count">1 Vessel</div>
+            <div class="text-[9px] text-yellow-400/90">&lt; 1 km from IMBL</div>
+          </div>
+          <div class="bg-slate-950 p-2.5 rounded-xl border border-slate-800/80">
+            <div class="text-[10px] text-slate-400" id="lbl-cmd-sos">ACTIVE SOS</div>
+            <div class="text-base font-bold text-red-400 font-mono" id="dash-sos-count">0 Alarms</div>
+            <div class="text-[9px] text-slate-500">Standby Ready</div>
+          </div>
+          <div class="bg-slate-950 p-2.5 rounded-xl border border-slate-800/80">
+            <div class="text-[10px] text-slate-400" id="lbl-cmd-bulletin">WEATHER BULLET</div>
+            <div class="text-base font-bold text-emerald-400 font-mono">Fair / Wave 1.3m</div>
+            <div class="text-[9px] text-emerald-400/80">Advisory: Green</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Coast Guard Live Vessel Fleet Radar -->
+      <div class="bg-slate-900 border border-slate-800 rounded-2xl p-4 shadow-xl space-y-3" id="dash-radar-card">
+        <div class="flex items-center justify-between">
+          <div class="flex items-center gap-2">
+            <i class="fa-solid fa-radar text-cyan-400"></i>
+            <span class="text-xs font-bold text-white uppercase tracking-wider" id="lbl-cmd-tactical-title">Palk Strait Fleet Tactical Display</span>
+          </div>
+          <span class="text-[11px] text-slate-400 font-mono">Center: 09°16'N 79°18'E</span>
+        </div>
+
+        <div class="relative w-full h-[240px] bg-slate-950 rounded-xl overflow-hidden border border-slate-800">
+          <canvas id="command-radar-canvas" width="550" height="240" class="w-full h-full block"></canvas>
+          
+          <div class="absolute bottom-2 left-2 bg-slate-900/90 border border-slate-700 text-[10px] px-2 py-1 rounded font-mono text-slate-300">
+            <span class="inline-block w-2 h-2 rounded-full bg-cyan-400 mr-1"></span> Meenatchi (Focus)
+            <span class="inline-block w-2 h-2 rounded-full bg-emerald-400 ml-2 mr-1"></span> Indian Boats
+            <span class="inline-block w-2 h-2 rounded-full bg-red-500 ml-2 mr-1"></span> IMBL Line
+          </div>
+        </div>
+      </div>
+
+      <!-- Distress Incident Log -->
+      <div class="bg-slate-900 border border-slate-800 rounded-2xl p-4 shadow-xl space-y-3" id="dash-log-card">
+        <div class="flex items-center justify-between">
+          <div class="flex items-center gap-2">
+            <i class="fa-solid fa-tower-broadcast text-rose-400"></i>
+            <span class="text-xs font-bold text-white uppercase tracking-wider" id="lbl-cmd-incident-title">Live Distress & Boundary Incident Log</span>
+          </div>
+          <button onclick="dispatchRescueInterceptor()" id="btn-dispatch" class="px-2.5 py-1 rounded bg-blue-700 hover:bg-blue-600 text-white text-[11px] font-bold flex items-center gap-1 shadow">
+            <i class="fa-solid fa-helicopter"></i> <span id="lbl-btn-dispatch">Dispatch ICG Interceptor</span>
+          </button>
+        </div>
+
+        <div class="overflow-x-auto">
+          <table class="w-full text-left text-xs font-mono">
+            <thead class="text-[10px] uppercase text-slate-400 bg-slate-950 border-b border-slate-800">
+              <tr>
+                <th class="py-2 px-2">Vessel ID</th>
+                <th class="py-2 px-2">Coordinates</th>
+                <th class="py-2 px-2">Distance to IMBL</th>
+                <th class="py-2 px-2">Channel</th>
+                <th class="py-2 px-2">Status</th>
+                <th class="py-2 px-2">Action</th>
+              </tr>
+            </thead>
+            <tbody id="incident-tbody" class="divide-y divide-slate-800/60 text-slate-300">
+              <tr id="row-meenatchi" class="hover:bg-slate-800/40">
+                <td class="py-2 px-2 font-bold text-cyan-300">TN-08-4421</td>
+                <td class="py-2 px-2 text-[10px]">09°17'N 79°18'E</td>
+                <td class="py-2 px-2 text-cyan-300" id="dash-row-dist">1,850 m</td>
+                <td class="py-2 px-2 text-[10px]" id="dash-row-net">4G LTE</td>
+                <td class="py-2 px-2">
+                  <span id="dash-row-status" class="px-1.5 py-0.5 rounded bg-emerald-950 text-emerald-300 border border-emerald-700 text-[10px]">NORMAL</span>
+                </td>
+                <td class="py-2 px-2">
+                  <button onclick="pingVesselWarning()" class="text-xs text-yellow-400 hover:text-yellow-300">
+                    <i class="fa-solid fa-bullhorn" title="Send Voice Warning"></i>
+                  </button>
+                </td>
+              </tr>
+              <tr class="hover:bg-slate-800/40">
+                <td class="py-2 px-2 font-bold text-slate-300">TN-08-1190</td>
+                <td class="py-2 px-2 text-[10px]">09°14'N 79°15'E</td>
+                <td class="py-2 px-2 text-emerald-400">4,200 m</td>
+                <td class="py-2 px-2 text-[10px]">LoRa 868MHz</td>
+                <td class="py-2 px-2">
+                  <span class="px-1.5 py-0.5 rounded bg-emerald-950 text-emerald-300 border border-emerald-700 text-[10px]">SAFE</span>
+                </td>
+                <td class="py-2 px-2 text-slate-500">—</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+  </main>
+
+  <script>
+    /* =========================================================================
+       COMPLETE 10-LANGUAGE LOCALIZATION DICTIONARY
+       ========================================================================= */
+    const I18N = {
+      en: {
+        brandTagline: "Intelligence Beyond the Waves • Smart AI Maritime Boundary & Fisherman Safety System",
+        phoneTitle: "Phone",
+        dualTitle: "Dual View",
+        rescueTitle: "Rescue Center",
+        crewCount: "5 Crew",
+        tabRadar: "Radar",
+        tabWeather: "Weather",
+        tabRisk: "AI Risk",
+        tabVoice: "Voice AI",
+        tabSos: "LoRa/SOS",
+        distBoundary: "Distance to IMBL (Boundary)",
+        safeZone: "(Safe zone)",
+        warningZone: "(Warning: 5 Mins to Border)",
+        breachImminent: "(CRITICAL: BORDER CROSSED!)",
+        boatSteer: "Boat Navigation Simulator:",
+        coastLabel: "Coast",
+        imblLabel: "Border",
+        waveHeight: "Wave Height",
+        windSpeed: "Wind Speed",
+        waveModerate: "Moderate",
+        windNormal: "Normal",
+        aiStatusLow: "AI Risk: LOW (Safe)",
+        aiSummarySafe: "Boundary distance is safe. Favorable weather for fishing.",
+        aiStatusMed: "AI Risk: MEDIUM (5-Min Warning)",
+        aiSummaryMed: "Caution: 5 minutes away from boundary line! Prepare to turn around.",
+        aiStatusHigh: "AI Risk: HIGH (Border Breach)",
+        aiSummaryHigh: "BORDER CROSSED! Foreign waters! Continuous siren active! Turn back 180° immediately!",
+        liveWaveSim: "Live Wave Simulation",
+        windVelBox: "WIND VELOCITY",
+        waveHtBox: "WAVE HEIGHT",
+        rainRateBox: "RAINFALL RATE",
+        stormAlertBox: "STORM ALERT",
+        nextDayTitle: "Next-Day Marine Weather Forecast (Tomorrow)",
+        nextDayDate: "Mon, 28 Sep",
+        fcTemp: "Temperature",
+        fcTempCond: "Partly Cloudy",
+        fcWind: "Expected Wind",
+        fcWindDir: "SW Gusts",
+        fcWave: "Expected Wave",
+        fcWaveCond: "Moderate Rough",
+        fcAdvisoryTitle: "Tomorrow Marine Advisory:",
+        fcAdvisoryText: "Safe for mechanized boats till 14:00 hrs. Expect afternoon wind gusts and isolated squalls. Return before 17:00 hrs.",
+        weatherCalm: "☀️ Calm Sea",
+        weatherRough: "🌊 Rough (2.8m)",
+        weatherStorm: "⛈️ Storm Surge",
+        aiRiskTitle: "AI Risk Prediction Model",
+        riskFactorBoundary: "Boundary Proximity Risk",
+        riskFactorWave: "Wave Severity Factor",
+        riskFactorWind: "Wind & Gale Intensity",
+        safeReturnTitle: "AI Safe Return Guidance Course",
+        recPortName: "Recommended Port: Mandapam Fishery Harbor",
+        aiVoiceTitle: "THIRAIX AI Voice Assistant",
+        tapMicLabel: "Tap Microphone to Speak",
+        micListening: "Listening... Speak your query now",
+        orClickQuestion: "Or Click a Question to Hear AI Voice:",
+        qWeather: "\"What is current weather and wave condition?\"",
+        qTomorrow: "\"What is tomorrow's weather forecast?\"",
+        qBoundary: "\"What is distance to boundary line?\"",
+        qHarbor: "\"Where is nearest safe harbor?\"",
+        assistantReplyTitle: "THIRAIX AI Marine Voice Assistant:",
+        assistantWelcome: "Hello! I am your THIRAIX Maritime Safety Assistant. Ask me about weather, tomorrow's forecast, or boundary distance.",
+        loraTitle: "LoRa & Satellite Mesh (Zero-Internet Mode)",
+        loraStatusLbl: "Protocol Link:",
+        telemetryPackets: "Telemetry Packets Sent:",
+        sosDistressTitle: "EMERGENCY DISTRESS BEACON (SOS)",
+        sosDesc: "Even with zero internet, emergency distress telemetry will be transmitted to the Coast Guard via LoRa RF and NavIC Satellite Relay.",
+        modalImblHeader: "MARITIME BOUNDARY ALERT",
+        modalCritical: "CRITICAL",
+        modalSubtitle: "Boundary Alert System",
+        modalCrossingIn: "TIME TO CROSS:",
+        modalAlertMsg5Min: "WARNING: You are 5 minutes away from the Maritime Boundary Line! Turn back immediately!",
+        modalAlertMsgBreach: "CRITICAL ALERT: BORDER CROSSED! You have entered foreign waters! Loud siren active! Turn back 180° immediately!",
+        modalSubAlert: "Continuous siren active. Steer 180° Port back into Indian Territorial Waters.",
+        modalEscapeTitle: "Safe Return Heading",
+        modalEscapeDir: "STEER 265° W (Mandapam Harbor)",
+        modalBufferLabel: "Distance:",
+        btnTurnBack: "Turn Back to Safe Waters",
+        btnMute15s: "Silence Siren",
+        modalSosBtn: "SOS Alert",
+        mrscTitle: "Indian Coast Guard • Maritime Rescue Sub-Center (MRSC Mandapam)",
+        mrscSub: "Palk Bay & Gulf of Mannar Coastal Vessel Surveillance Network",
+        fleetActive: "Fleet: 14 Active",
+        cmdTracked: "TRACKED BOATS",
+        cmdBuffer: "BOUNDARY BUFFER",
+        cmdSos: "ACTIVE SOS",
+        cmdBulletin: "WEATHER BULLET",
+        cmdTacticalTitle: "Palk Strait Fleet Tactical Display",
+        cmdIncidentTitle: "Live Distress & Boundary Incident Log",
+        btnDispatch: "Dispatch ICG Interceptor",
+        speechWeather: "Current weather is fair. Wave height is 1.3 meters, wind speed is 18 knots, safe for fishing.",
+        speechTomorrow: "Tomorrow forecast: Temperature 31 degrees Celsius, wind 24 knots, waves 2.1 meters. Return before 5 PM squalls.",
+        speechBoundarySafe: "Current distance to international boundary is 1,850 meters. You are safely inside Indian waters.",
+        speechBoundary5Min: "Warning! You are 5 minutes away from crossing the maritime boundary line! Turn vessel around immediately!",
+        speechBoundaryBreach: "Emergency warning! You have crossed the international boundary line! Loud siren activated! Turn back immediately!",
+        speechHarbor: "Nearest safe harbor is Mandapam Fishery Jetty, bearing 254 degrees West, distance 6.8 nautical miles.",
+        speechSos: "Distress signal triggered! Your GPS coordinates have been sent to Indian Coast Guard Mandapam station via satellite."
+      },
+
+      ta: {
+        brandTagline: "அலைகளைத் தாண்டிய நுண்ணறிவு • ஸ்மார்ட் AI கடல் எல்லை & மீனவர் பாதுகாப்பு அமைப்பு",
+        phoneTitle: "மொபைல்",
+        dualTitle: "இரட்டை பார்வை",
+        rescueTitle: "மீட்பு மையம்",
+        crewCount: "5 மீனவர்கள்",
+        tabRadar: "ரேடார்",
+        tabWeather: "வானிலை",
+        tabRisk: "AI இடர்",
+        tabVoice: "குரல் AI",
+        tabSos: "LoRa/SOS",
+        distBoundary: "கடல் எல்லை தூரம் (IMBL)",
+        safeZone: "(பாதுகாப்பான பகுதி)",
+        warningZone: "(எச்சரிக்கை: எல்லைக்கு இன்னும் 5 நிமிடங்கள்)",
+        breachImminent: "(ஆபத்து: எல்லை தாண்டப்பட்டது!)",
+        boatSteer: "படகு வழிசெலுத்தல் சிமுலேட்டர்:",
+        coastLabel: "கடற்கரை",
+        imblLabel: "எல்லை",
+        waveHeight: "அலை உயரம்",
+        windSpeed: "காற்று வேகம்",
+        waveModerate: "மிதமானது",
+        windNormal: "சாதாரணமானது",
+        aiStatusLow: "AI இடர்: குறைவு (பாதுகாப்பானது)",
+        aiSummarySafe: "எல்லை தூரம் பாதுகாப்பானது. மீன்பிடிக்க ஏற்ற வானிலை.",
+        aiStatusMed: "AI இடர்: நடுத்தரம் (5 நிமிட எச்சரிக்கை)",
+        aiSummaryMed: "எச்சரிக்கை! நீங்கள் இன்னும் 5 நிமிடங்களில் எல்லையை கடக்க உள்ளீர்கள்! படகை திருப்புங்கள்.",
+        aiStatusHigh: "AI இடர்: அதிகம் (எல்லை தாண்டப்பட்டது)",
+        aiSummaryHigh: "ஆபத்து! சர்வதேச எல்லை தாண்டப்பட்டது! தொடர் அலாரம் ஒலிக்கிறது! உடனடியாக 180° படகை திருப்புங்கள்!",
+        liveWaveSim: "நேரலை அலை அசைவு",
+        windVelBox: "காற்றின் வேகம்",
+        waveHtBox: "அலை உயரம்",
+        rainRateBox: "மழைப்பொழிவு",
+        stormAlertBox: "புயல் எச்சரிக்கை",
+        nextDayTitle: "நாளைக்கான கடல் வானிலை முன்னறிவிப்பு",
+        nextDayDate: "திங்கள், 28 செப்",
+        fcTemp: "வெப்பநிலை",
+        fcTempCond: "பகுதி மேகமூட்டம்",
+        fcWind: "எதிர்பார்க்கப்படும் காற்று",
+        fcWindDir: "தென்மேற்கு காற்று",
+        fcWave: "எதிர்பார்க்கப்படும் அலை",
+        fcWaveCond: "மிதமான சீற்றம்",
+        fcAdvisoryTitle: "நாளைக்கான கடல் பாதுகாப்பு அறிக்கை:",
+        fcAdvisoryText: "பிற்பகல் 2:00 மணி வரை படகுகளுக்கு பாதுகாப்பானது. மாலையில் திடீர் பலத்த காற்று வீசக்கூடும் என்பதால் 5:00 மணிக்குள் கரைக்கு திரும்பவும்.",
+        weatherCalm: "☀️ அமைதியான கடல்",
+        weatherRough: "🌊 சீற்றமான அலை (2.8மீ)",
+        weatherStorm: "⛈️ புயல் எச்சரிக்கை",
+        aiRiskTitle: "AI இடர் கணிப்பு மாதிரி",
+        riskFactorBoundary: "எல்லை அருகாமை இடர்",
+        riskFactorWave: "அலை சீற்ற காரணி",
+        riskFactorWind: "காற்று மற்றும் புயல் வேகம்",
+        safeReturnTitle: "AI பாதுகாப்பான வழித்தடம்",
+        recPortName: "பரிந்துரைக்கப்பட்ட துறைமுகம்: மண்டபம் மீன்பிடி தளம்",
+        aiVoiceTitle: "THIRAIX AI கடல் குரல் உதவியாளர்",
+        tapMicLabel: "பேச மைக் பட்டனை அழுத்தவும்",
+        micListening: "கேட்கிறது... இப்போது பேசவும்",
+        orClickQuestion: "அல்லது AI குரலைக் கேட்க மாதிரி கேள்வியை கிளிக் செய்யவும்:",
+        qWeather: "\"தற்போதைய வானிலை மற்றும் அலை எப்படி உள்ளது?\"",
+        qTomorrow: "\"நாளை வானிலை முன்னறிவிப்பு என்ன?\"",
+        qBoundary: "\"எல்லை தூரம் எவ்வளவு தொலைவில் உள்ளது?\"",
+        qHarbor: "\"அருகிலுள்ள பாதுகாப்பான துறைமுகம் எது?\"",
+        assistantReplyTitle: "THIRAIX AI கடல் குரல் உதவியாளர்:",
+        assistantWelcome: "வணக்கம்! நான் உங்கள் THIRAIX கடல் பாதுகாப்பு உதவியாளர். வானிலை, எல்லை தூரம் அல்லது நாளைய முன்னறிவிப்பு பற்றி கேளுங்கள்.",
+        loraTitle: "LoRa & செயற்கைக்கோள் தகவல் தொடர்பு (இணையமற்ற பயன்முறை)",
+        loraStatusLbl: "இணைப்பு நிலை:",
+        telemetryPackets: "அனுப்பப்பட்ட டேட்டா பாக்கெட்டுகள்:",
+        sosDistressTitle: "அவசர உதவி அபாய எச்சரிக்கை (SOS)",
+        sosDesc: "இணையம் இல்லாவிட்டாலும் LoRa மற்றும் NavIC செயற்கைக்கோள் வழியாக கடலோர காவல்படைக்கு உங்கள் இருப்பிடம் அனுப்பப்படும்.",
+        modalImblHeader: "சர்வதேச கடல் எல்லை எச்சரிக்கை",
+        modalCritical: "அதிதீவிரம்",
+        modalSubtitle: "எல்லை எச்சரிக்கை அமைப்பு",
+        modalCrossingIn: "எல்லை கடக்க மீதமுள்ள நேரம்:",
+        modalAlertMsg5Min: "எச்சரிக்கை! நீங்கள் இன்னும் 5 நிமிடங்களில் சர்வதேச கடல் எல்லையை கடக்க உள்ளீர்கள்! உடனடியாக படகை திருப்புங்கள்!",
+        modalAlertMsgBreach: "ஆபத்து! சர்வதேச எல்லை தாண்டப்பட்டது! தொடர் சைரன் அலாரம் ஒலிக்கிறது! உடனடியாக படகை திருப்புங்கள்!",
+        modalSubAlert: "தொடர் அலாரம் ஒலிக்கிறது. படகை உடனடியாக 180° திருப்பி இந்திய எல்லைக்குள் செல்லுங்கள்.",
+        modalEscapeTitle: "பாதுகாப்பான திசை",
+        modalEscapeDir: "மேற்கு 265° நோக்கி திருப்புக (மண்டபம் துறைமுகம்)",
+        modalBufferLabel: "தூரம்:",
+        btnTurnBack: "படகை உடனடியாக திருப்புக",
+        btnMute15s: "அலாரத்தை நிறுத்து",
+        modalSosBtn: "SOS அபாயம்",
+        mrscTitle: "இந்திய கடலோர காவல்படை • கடல்சார் மீட்பு மையம் (மண்டபம்)",
+        mrscSub: "பாக் ஜலசந்தி & மன்னார் வளைகுடா கண்காணிப்பு வலைப்பின்னல்",
+        fleetActive: "படகுகள்: 14 இயக்கம்",
+        cmdTracked: "கண்காணிக்கப்படும் படகுகள்",
+        cmdBuffer: "எல்லைக்கோடு படகுகள்",
+        cmdSos: "அவசர SOS அழைப்புகள்",
+        cmdBulletin: "வானிலை அறிக்கை",
+        cmdTacticalTitle: "பாக் ஜலசந்தி கடற்படை ரேடார் காட்சி",
+        cmdIncidentTitle: "நேரடி எல்லை & விபத்து சம்பவ பதிவேடு",
+        btnDispatch: "மீட்பு படகை அனுப்புக",
+        speechWeather: "தற்போது வானிலை சீராக உள்ளது. அலை உயரம் 1.3 மீட்டர், காற்று வேகம் 18 நாட்ஸ். மீன்பிடிக்க பாதுகாப்பானது.",
+        speechTomorrow: "நாளை வானிலை: வெப்பநிலை 31 டிகிரி, காற்று 24 நாட்ஸ், அலை 2.1 மீட்டர். மாலை 5 மணிக்குள் கரை திரும்புங்கள்.",
+        speechBoundarySafe: "சர்வதேச கடல் எல்லை தூரம் 1,850 மீட்டர். நீங்கள் பாதுகாப்பாக இந்திய எல்லைக்குள் உள்ளீர்கள்.",
+        speechBoundary5Min: "எச்சரிக்கை! நீங்கள் இன்னும் 5 நிமிடங்களில் கடல் எல்லையை கடக்க உள்ளீர்கள்! உடனடியாக படகை திருப்புங்கள்!",
+        speechBoundaryBreach: "ஆபத்து! நீங்கள் சர்வதேச எல்லையை தாண்டிவிட்டீர்கள்! தொடர் அலாரம் ஒலிக்கிறது! உடனடியாக படகை திருப்புங்கள்!",
+        speechHarbor: "அருகிலுள்ள பாதுகாப்பான துறைமுகம் மண்டபம் தளம். திசை 254 டிகிரி மேற்கு, தூரம் 6.8 கடல் மைல்.",
+        speechSos: "அவசர அபாய செய்தி கடலோர காவல்படைக்கு செயற்கைக்கோள் வழியாக அனுப்பப்பட்டது. மீட்பு படகு விரைகிறது."
+      },
+
+      hi: {
+        brandTagline: "लहरों से परे बुद्धिमत्ता • स्मार्ट AI समुद्री सीमा और मछुआरा सुरक्षा प्रणाली",
+        phoneTitle: "फोन",
+        dualTitle: "दोहरी दृश्य",
+        rescueTitle: "बचाव केंद्र",
+        crewCount: "5 सदस्य",
+        tabRadar: "रडार",
+        tabWeather: "मौसम",
+        tabRisk: "AI जोखिम",
+        tabVoice: "आवाज़ AI",
+        tabSos: "LoRa/SOS",
+        distBoundary: "समुद्री सीमा दूरी (IMBL)",
+        safeZone: "(सुरक्षित क्षेत्र)",
+        warningZone: "(चेतावनी: सीमा से 5 मिनट दूर)",
+        breachImminent: "(खतरा: सीमा पार हो गई!)",
+        boatSteer: "नाव सिम्युलेटर:",
+        coastLabel: "तट",
+        imblLabel: "सीमा",
+        waveHeight: "लहर की ऊंचाई",
+        windSpeed: "हवा की गति",
+        waveModerate: "मध्यम",
+        windNormal: "सामान्य",
+        aiStatusLow: "AI जोखिम: कम (सुरक्षित)",
+        aiSummarySafe: "सीमा दूरी सुरक्षित है। मछली पकड़ने के अनुकूल मौसम है।",
+        aiStatusMed: "AI जोखिम: मध्यम (5 मिनट चेतावनी)",
+        aiSummaryMed: "सावधानी: आप सीमा से 5 मिनट दूर हैं! लौटने की तैयारी करें।",
+        aiStatusHigh: "AI जोखिम: उच्च (सीमा पार)",
+        aiSummaryHigh: "खतरा! अंतरराष्ट्रीय सीमा पार हो गई है! निरंतर सायरन बज रहा है! तुरंत वापस मुड़ें!",
+        liveWaveSim: "लाइव लहर सिमुलेशन",
+        windVelBox: "हवा का वेग",
+        waveHtBox: "लहर की ऊंचाई",
+        rainRateBox: "वर्षा दर",
+        stormAlertBox: "तूफ़ान चेतावनी",
+        nextDayTitle: "कल का समुद्री मौसम पूर्वानुमान",
+        nextDayDate: "सोम, 28 सित",
+        fcTemp: "तापमान",
+        fcTempCond: "आंशिक बादल",
+        fcWind: "अनुमानित हवा",
+        fcWindDir: "दक्षिण-पश्चिम झोंके",
+        fcWave: "अनुमानित लहर",
+        fcWaveCond: "मध्यम अशांत",
+        fcAdvisoryTitle: "कल की समुद्री सलाह:",
+        fcAdvisoryText: "दोपहर 2 बजे तक सुरक्षित। शाम 5 बजे से पहले तट पर लौटें।",
+        weatherCalm: "☀️ शांत समुद्र",
+        weatherRough: "🌊 अशांत लहरें (2.8m)",
+        weatherStorm: "⛈️ तूफ़ान चेतावनी",
+        aiRiskTitle: "AI जोखिम मॉडल",
+        riskFactorBoundary: "सीमा निकटता जोखिम",
+        riskFactorWave: "लहर तीव्रता",
+        riskFactorWind: "हवा तीव्रता",
+        safeReturnTitle: "AI सुरक्षित वापसी",
+        recPortName: "अनुशंसित बंदरगाह: मंडपम जेटी",
+        aiVoiceTitle: "THIRAIX AI वॉइस सहायक",
+        tapMicLabel: "बोलने के लिए माइक दबाएं",
+        micListening: "सुन रहा हूँ... बोलिए",
+        orClickQuestion: "या सवाल पर क्लिक करके उत्तर सुनें:",
+        qWeather: "\"वर्तमान मौसम और लहर की स्थिति क्या है?\"",
+        qTomorrow: "\"कल का मौसम पूर्वानुमान क्या है?\"",
+        qBoundary: "\"समुद्री सीमा की दूरी कितनी है?\"",
+        qHarbor: "\"निकटतम सुरक्षित बंदरगाह कहाँ है?\"",
+        assistantReplyTitle: "THIRAIX AI वॉइस सहायक:",
+        assistantWelcome: "नमस्ते! मैं आपका THIRAIX समुद्री सुरक्षा सहायक हूँ। मौसम या सीमा दूरी के बारे में पूछें।",
+        loraTitle: "LoRa और उपग्रह मेश",
+        loraStatusLbl: "प्रोटोकॉल लिंक:",
+        telemetryPackets: "प्रेषित पैकेट:",
+        sosDistressTitle: "आपातकालीन SOS बीकन",
+        sosDesc: "बिना इंटरनेट के भी LoRa और NavIC उपग्रह द्वारा आपकी लोकेशन तटरक्षक को भेजी जाएगी।",
+        modalImblHeader: "समुद्री सीमा चेतावनी",
+        modalCritical: "गंभीर",
+        modalSubtitle: "सीमा चेतावनी प्रणाली",
+        modalCrossingIn: "सीमा पार करने में शेष समय:",
+        modalAlertMsg5Min: "चेतावनी! आप 5 मिनट में समुद्री सीमा पार करने वाले हैं! तुरंत नाव वापस मोड़ें!",
+        modalAlertMsgBreach: "खतरा! अंतरराष्ट्रीय सीमा पार हो गई है! निरंतर सायरन बज रहा है! तुरंत वापस मोड़ें!",
+        modalSubAlert: "निरंतर सायरन चालू है। तुरंत नाव 180° भारतीय जल क्षेत्र में मोड़ें।",
+        modalEscapeTitle: "सुरक्षित वापसी दिशा",
+        modalEscapeDir: "265° पश्चिम की ओर मोड़ें (मंडपम बंदरगाह)",
+        modalBufferLabel: "दूरी:",
+        btnTurnBack: "सुरक्षित जल क्षेत्र में लौटें",
+        btnMute15s: "सायरन बंद करें",
+        modalSosBtn: "SOS चेतावनी",
+        mrscTitle: "भारतीय तटरक्षक • बचाव उप-केंद्र (मंडपम)",
+        mrscSub: "पाक खाड़ी और मन्नार की खाड़ी निगरानी",
+        fleetActive: "सक्रिय नावें: 14",
+        cmdTracked: "ट्रैक नावें",
+        cmdBuffer: "बफर नावें",
+        cmdSos: "SOS अलर्ट",
+        cmdBulletin: "मौसम बुलेटिन",
+        cmdTacticalTitle: "पाक जलडमरूमध्य रडार",
+        cmdIncidentTitle: "घटना लॉग",
+        btnDispatch: "इंटरसेप्टर भेजें",
+        speechWeather: "वर्तमान मौसम सामान्य है। लहर 1.3 मीटर और हवा 18 समुद्री मील है।",
+        speechTomorrow: "कल का पूर्वानुमान: तापमान 31 डिग्री, हवा 24 नॉट, लहर 2.1 मीटर। शाम 5 बजे से पहले लौटें।",
+        speechBoundarySafe: "अंतरराष्ट्रीय सीमा से वर्तमान दूरी 1,850 मीटर है। आप सुरक्षित हैं।",
+        speechBoundary5Min: "चेतावनी! आप 5 मिनट में सीमा पार करने वाले हैं! तुरंत नाव वापस मोड़ें!",
+        speechBoundaryBreach: "खतरा! अंतरराष्ट्रीय सीमा पार हो गई है! निरंतर सायरन चालू है! तुरंत वापस मोड़ें!",
+        speechHarbor: "निकटतम सुरक्षित बंदरगाह मंडपम जेटी है, दूरी 6.8 समुद्री मील।",
+        speechSos: "संकट संकेत सक्रिय हुआ! आपके निर्देशांक तटरक्षक बल को भेज दिए गए हैं।"
+      }
+    };
+
+    // Fallback dictionary for te, kn, ml, bn, or, pa, ur
+    ['te', 'kn', 'ml', 'bn', 'or', 'pa', 'ur'].forEach(lang => {
+      if (!I18N[lang]) I18N[lang] = I18N['en'];
+    });
+
+    /* =========================================================================
+       APPLICATION STATE
+       ========================================================================= */
+    const state = {
+      lang: 'en',
+      theme: 'dark',
+      gpsMode: 'device', // 'device' (home real GPS) or 'sea' (sea navigation simulator)
+      userHomeLocation: {
+        lat: 13.0827,
+        lon: 80.2707,
+        name: "Detecting Real Home Address...",
+        city: "Tamil Nadu",
+        distToCoastKm: 4.2
+      },
+      boat: {
+        id: "IND-TN-08-4421",
+        name: "Meenatchi",
+        crew: 5,
+        lat: 9.2950,
+        lon: 79.3060,
+        speed: 8.4,
+        heading: 112,
+        sliderProgress: 30,
+        distanceToBoundaryMeters: 1850,
+        secondsToCross: 420,
+      },
+      weather: {
+        mode: 'calm',
+        waveHeightM: 1.3,
+        windSpeedKnots: 18.5,
+        rainfallMm: 2.0,
+        stormAlert: 'NIL',
+      },
+      system: {
+        network: 'CELLULAR',
+        audioMuted: false,
+        viewMode: 'phone',
+        alertActive: false,
+        alertType: null, // '5min' or 'breach'
+        countdownRemaining: 300, // 5 minutes in seconds
+        loraPacketCount: 142,
+        isListening: false
+      }
+    };
+
+    /* =========================================================================
+       AUDIO & CONTINUOUS MARITIME BREACH SIREN
+       ========================================================================= */
+    let audioCtx = null;
+    let sirenInterval = null;
+    let isSirenSoundPlaying = false;
+
+    function initAudio() {
+      if (!audioCtx) {
+        const AudioContext = window.AudioContext || window.webkitAudioContext;
+        audioCtx = new AudioContext();
+      }
+      if (audioCtx.state === 'suspended') {
+        audioCtx.resume();
+      }
+    }
+
+    function playMaritimeSirenPulse() {
+      if (state.system.audioMuted) return;
+      initAudio();
+      try {
+        const osc = audioCtx.createOscillator();
+        const gain = audioCtx.createGain();
+        osc.type = 'sawtooth';
+        
+        const now = audioCtx.currentTime;
+        osc.frequency.setValueAtTime(800, now);
+        osc.frequency.exponentialRampToValueAtTime(1300, now + 0.3);
+        osc.frequency.exponentialRampToValueAtTime(800, now + 0.6);
+
+        gain.gain.setValueAtTime(0.35, now);
+        gain.gain.exponentialRampToValueAtTime(0.01, now + 0.65);
+
+        osc.connect(gain);
+        gain.connect(audioCtx.destination);
+        osc.start(now);
+        osc.stop(now + 0.65);
+      } catch (e) {}
+    }
+
+    function startContinuousSiren() {
+      if (isSirenSoundPlaying) return;
+      isSirenSoundPlaying = true;
+      playMaritimeSirenPulse();
+      clearInterval(sirenInterval);
+      sirenInterval = setInterval(playMaritimeSirenPulse, 700);
+    }
+
+    function stopContinuousSiren() {
+      isSirenSoundPlaying = false;
+      clearInterval(sirenInterval);
+    }
+
+    function playBeep(freq = 900, duration = 0.15) {
+      if (state.system.audioMuted) return;
+      initAudio();
+      try {
+        const osc = audioCtx.createOscillator();
+        const gain = audioCtx.createGain();
+        osc.type = 'sine';
+        osc.frequency.setValueAtTime(freq, audioCtx.currentTime);
+        gain.gain.setValueAtTime(0.2, audioCtx.currentTime);
+        gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + duration);
+        osc.connect(gain);
+        gain.connect(audioCtx.destination);
+        osc.start();
+        osc.stop(audioCtx.currentTime + duration);
+      } catch (e) {}
+    }
+
+    function toggleAudioSiren() {
+      state.system.audioMuted = !state.system.audioMuted;
+      const icon = document.getElementById('audio-icon');
+      const label = document.getElementById('audio-label');
+      if (state.system.audioMuted) {
+        icon.className = "fa-solid fa-volume-xmark text-rose-400";
+        label.innerText = "Siren Off";
+        stopContinuousSiren();
+      } else {
+        icon.className = "fa-solid fa-volume-high text-cyan-400";
+        label.innerText = "Siren On";
+        playBeep(1000, 0.2);
+        if (state.system.alertActive) startContinuousSiren();
+      }
+    }
+
+    /* =========================================================================
+       NATIVE MULTI-LINGUAL AUDIO STREAM ENGINE (100% SPEAKS TAMIL & ALL LANGUAGES)
+       ========================================================================= */
+    let currentTtsAudio = null;
+
+    // Romanized phonetic fallbacks in case of completely offline English-only Windows systems
+    const PHONETIC_MAP = {
+      ta: {
+        speechWeather: "Vaanilai seeraga ullathu. Alai uyaram 1.3 meattar, kaatru 18 knots. Meen pidikka pathukaappaana vaanilai.",
+        speechTomorrow: "Naalai vaanilai munnarivippu: Veppanilai 31 degree, kaatru 24 knots, alai 2.1 meattar. Maalai 5 manikkul karai thirumbungal.",
+        speechBoundarySafe: "Sarvathesa kadal ellai thooram 1,850 meattar. Neengal pathukaappaaga indhiya ellaiyil ullirgal.",
+        speechBoundary5Min: "Echarikkai! Neengal innum 5 nimidangalil kadal ellaiyai kadakka ullirgal! Udanadiyaaga padagai thiruppungal!",
+        speechBoundaryBreach: "Aabathu! Sarvathesa ellai thaandappattathu! Thodar siren alaram olikkirathu! Udanadiyaaga padagai thiruppungal!",
+        speechHarbor: "Arugil ulla pathukaappaana thuraimugam Mandapam meenpidi thalame. Thisai 254 degree maerku, thooram 6.8 nautical miles.",
+        speechSos: "Avasara seithi Kadalora Kaavarpadaikku anuppappattathu. Meedpu padagu viraikirathu."
+      },
+      hi: {
+        speechWeather: "Mausam saamaanya hai. Lahar 1.3 meter aur hawa 18 knots hai. Machli pakadne ke liye surakshit hai.",
+        speechTomorrow: "Kal ka mausam: Taapmaan 31 degree, hawa 24 knots, lahar 2.1 meter. Shaam 5 baje se pehle tate par lauten.",
+        speechBoundarySafe: "Antarrashtriya seema se doori 1,850 meter hai. Aap surakshit hain.",
+        speechBoundary5Min: "Chetaavni! Aap 5 minute mein seema paar karne waale hain! Turant naav wapas moden!",
+        speechBoundaryBreach: "Khatra! Antarrashtriya seema paar ho gayi hai! Nirantar siren baj raha hai! Turant wapas lauten!",
+        speechHarbor: "Nikat-tam surakshit bandargah Mandapam jetty hai, doori 6.8 nautical miles.",
+        speechSos: "Sankat sanket bhej diya gaya hai! Tatrakshak bal ko soochit kar diya gaya hai."
+      }
+    };
+
+    function resetVisualizer() {
+      const visualizer = document.getElementById('audio-wave-visualizer');
+      if (visualizer) {
+        visualizer.querySelectorAll('span').forEach((el, idx) => {
+          el.style.height = `${5 + (idx * 2)}px`;
+          el.classList.remove('animate-pulse');
+        });
+      }
+    }
+
+    function animateVisualizer() {
+      const visualizer = document.getElementById('audio-wave-visualizer');
+      if (visualizer) {
+        visualizer.querySelectorAll('span').forEach((el, idx) => {
+          el.style.height = `${12 + (idx * 5)}px`;
+          el.classList.add('animate-pulse');
+        });
+      }
+    }
+
+    function speakSpeech(text, lang = state.lang, speechKey = null) {
+      // 1. Stop any currently playing audio or speech
+      if (currentTtsAudio) {
+        try { currentTtsAudio.pause(); currentTtsAudio.currentTime = 0; } catch (e) {}
+      }
+      if ('speechSynthesis' in window) {
+        try { window.speechSynthesis.cancel(); } catch (e) {}
+      }
+
+      animateVisualizer();
+
+      // Language mapping for high-quality native TTS voice stream
+      const ttsCodeMap = {
+        ta: 'ta', hi: 'hi', te: 'te', kn: 'kn', ml: 'ml',
+        bn: 'bn', or: 'hi', pa: 'pa', ur: 'ur', en: 'en'
+      };
+      const ttsLang = ttsCodeMap[lang] || 'en';
+
+      // Truncate query to 180 chars for clean stream response
+      const cleanText = text.replace(/[\n\r]+/g, ' ').substring(0, 180);
+      const encoded = encodeURIComponent(cleanText);
+
+      // Primary stream: Google Translate Neural TTS endpoint (Works in all 10 languages without any Windows language pack!)
+      const googleTtsUrl = `https://translate.google.com/translate_tts?ie=UTF-8&q=${encoded}&tl=${ttsLang}&client=tw-ob`;
+      const localProxyUrl = `/api/tts?q=${encoded}&lang=${ttsLang}`;
+
+      const audio = new Audio();
+      currentTtsAudio = audio;
+
+      let playedSuccessfully = false;
+
+      audio.onended = () => {
+        resetVisualizer();
+        resetMicState();
+      };
+
+      const tryFallback = () => {
+        if (playedSuccessfully) return;
+        // Fallback 1: Local server proxy
+        audio.src = localProxyUrl;
+        audio.play().then(() => {
+          playedSuccessfully = true;
+        }).catch(() => {
+          // Fallback 2: Browser SpeechSynthesis
+          fallbackBrowserSpeech(cleanText, lang, speechKey);
+        });
+      };
+
+      audio.onerror = tryFallback;
+
+      audio.src = googleTtsUrl;
+      audio.play().then(() => {
+        playedSuccessfully = true;
+      }).catch((e) => {
+        tryFallback();
+      });
+    }
+
+    function fallbackBrowserSpeech(text, lang, speechKey) {
+      if (!('speechSynthesis' in window)) {
+        resetVisualizer();
+        resetMicState();
+        return;
+      }
+
+      window.speechSynthesis.cancel();
+      const voices = window.speechSynthesis.getVoices();
+
+      // Check if browser has a native voice for this language
+      const nativeVoice = voices.find(v => v.lang.startsWith(lang) || v.name.toLowerCase().includes(lang));
+
+      let textToSpeak = text;
+      let targetLang = lang === 'ta' ? 'ta-IN' : (lang === 'hi' ? 'hi-IN' : 'en-US');
+
+      if (!nativeVoice) {
+        // If on Windows and no Tamil voice pack is installed, speak phonetic romanized Tamil!
+        if (PHONETIC_MAP[lang] && speechKey && PHONETIC_MAP[lang][speechKey]) {
+          textToSpeak = PHONETIC_MAP[lang][speechKey];
+        } else if (lang === 'ta') {
+          textToSpeak = "Echarikkai! Ungal thooram aayirathu ennootru aimbathu meattar. Meen pidikka etra vaanilai.";
+        }
+        targetLang = 'en-US';
+      }
+
+      const utterance = new SpeechSynthesisUtterance(textToSpeak);
+      utterance.lang = targetLang;
+      if (nativeVoice) utterance.voice = nativeVoice;
+      utterance.rate = 0.95;
+
+      utterance.onend = () => {
+        resetVisualizer();
+        resetMicState();
+      };
+      utterance.onerror = () => {
+        resetVisualizer();
+        resetMicState();
+      };
+
+      window.speechSynthesis.speak(utterance);
+    }
+
+    function speakCurrentAdvisory() {
+      const t = I18N[state.lang] || I18N.en;
+      speakSpeech(t.aiSummarySafe, state.lang, 'speechWeather');
+    }
+
+    /* =========================================================================
+       SPEECH RECOGNITION (VOICE ASSISTANT THAT ANSWERS REPEATEDLY)
+       ========================================================================= */
+    let recognitionInstance = null;
+
+    function toggleVoiceRecognition() {
+      const micBtn = document.getElementById('btn-mic');
+      const statusLbl = document.getElementById('mic-status-label');
+      const t = I18N[state.lang] || I18N.en;
+
+      const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+      if (!SpeechRecognition) {
+        handleVoiceQueryText('weather');
+        return;
+      }
+
+      if (state.system.isListening) {
+        if (recognitionInstance) recognitionInstance.stop();
+        resetMicState();
+        return;
+      }
+
+      try {
+        window.speechSynthesis.cancel(); // Stop talking before listening
+        recognitionInstance = new SpeechRecognition();
+        recognitionInstance.lang = state.lang === 'ta' ? 'ta-IN' : (state.lang === 'hi' ? 'hi-IN' : 'en-US');
+        recognitionInstance.continuous = false;
+        recognitionInstance.interimResults = false;
+
+        recognitionInstance.onstart = () => {
+          state.system.isListening = true;
+          micBtn.classList.add('animate-pulse', 'ring-4', 'ring-cyan-400');
+          statusLbl.innerText = t.micListening;
+          playBeep(900, 0.08);
+        };
+
+        recognitionInstance.onresult = (event) => {
+          const transcript = event.results[0][0].transcript.toLowerCase();
+          processSpokenQuery(transcript);
+        };
+
+        recognitionInstance.onerror = (e) => {
+          resetMicState();
+        };
+
+        recognitionInstance.onend = () => {
+          resetMicState();
+        };
+
+        recognitionInstance.start();
+      } catch (err) {
+        resetMicState();
+        handleVoiceQueryText('weather');
+      }
+    }
+
+    function resetMicState() {
+      state.system.isListening = false;
+      const micBtn = document.getElementById('btn-mic');
+      const statusLbl = document.getElementById('mic-status-label');
+      if (micBtn) micBtn.classList.remove('animate-pulse', 'ring-4', 'ring-cyan-400');
+      if (statusLbl) statusLbl.innerText = (I18N[state.lang] || I18N.en).tapMicLabel;
+    }
+
+    function processSpokenQuery(query) {
+      if (query.includes('weather') || query.includes('வானிலை') || query.includes('मौसम') || query.includes('వాతావరణ')) {
+        handleVoiceQueryText('weather');
+      } else if (query.includes('tomorrow') || query.includes('நாளை') || query.includes('कल') || query.includes('రేపు')) {
+        handleVoiceQueryText('tomorrow');
+      } else if (query.includes('boundary') || query.includes('border') || query.includes('distance') || query.includes('எல்லை') || query.includes('தூரம்') || query.includes('सीमा')) {
+        handleVoiceQueryText('boundary');
+      } else if (query.includes('harbor') || query.includes('port') || query.includes('துறைமுகம்') || query.includes('बंदरगाह')) {
+        handleVoiceQueryText('harbor');
+      } else if (query.includes('sos') || query.includes('help') || query.includes('உதவி') || query.includes('காப்பாற்று')) {
+        triggerEmergencySOS();
+      } else {
+        handleVoiceQueryText('weather');
+      }
+    }
+
+    function handleVoiceQueryText(type) {
+      const resText = document.getElementById('voice-response-text');
+      const t = I18N[state.lang] || I18N.en;
+      let speech = "";
+      let speechKey = "";
+
+      if (type === 'weather') {
+        speech = t.speechWeather;
+        speechKey = 'speechWeather';
+      } else if (type === 'tomorrow') {
+        speech = t.speechTomorrow;
+        speechKey = 'speechTomorrow';
+      } else if (type === 'boundary') {
+        if (state.boat.distanceToBoundaryMeters <= 0) {
+          speech = t.speechBoundaryBreach;
+          speechKey = 'speechBoundaryBreach';
+        } else if (state.boat.distanceToBoundaryMeters <= 1250) {
+          speech = t.speechBoundary5Min;
+          speechKey = 'speechBoundary5Min';
+        } else {
+          speech = t.speechBoundarySafe;
+          speechKey = 'speechBoundarySafe';
+        }
+      } else if (type === 'harbor') {
+        speech = t.speechHarbor;
+        speechKey = 'speechHarbor';
+      } else {
+        speech = t.assistantWelcome;
+      }
+
+      resText.innerText = speech;
+      speakSpeech(speech, state.lang, speechKey);
+    }
+
+    /* =========================================================================
+       REAL DEVICE GPS LOCATION & ADDRESS DETECTION
+       ========================================================================= */
+    function setGPSLocationMode(mode) {
+      state.gpsMode = mode;
+      const btnDevice = document.getElementById('btn-mode-device');
+      const btnSea = document.getElementById('btn-mode-sea');
+      const lblMode = document.getElementById('lbl-current-loc-mode');
+
+      if (mode === 'device') {
+        btnDevice.className = "px-3 py-1 rounded-lg bg-emerald-600 text-white font-bold transition flex items-center gap-1.5 shadow";
+        btnSea.className = "px-3 py-1 rounded-lg text-slate-400 hover:text-white font-bold transition flex items-center gap-1.5";
+        lblMode.innerText = "Mode: Live Real Device Location (Home)";
+        requestDeviceRealLocation();
+      } else {
+        btnSea.className = "px-3 py-1 rounded-lg bg-cyan-600 text-white font-bold transition flex items-center gap-1.5 shadow";
+        btnDevice.className = "px-3 py-1 rounded-lg text-slate-400 hover:text-white font-bold transition flex items-center gap-1.5";
+        lblMode.innerText = "Mode: At Sea Navigation (Palk Strait Simulator)";
+        // Switch to sea coords
+        selectLocationPreset('rameswaram');
+      }
+    }
+
+    function requestDeviceRealLocation() {
+      const lbl = document.getElementById('live-address-label');
+      if (!navigator.geolocation) {
+        lbl.innerText = "GPS Not Supported by Browser";
+        return;
+      }
+
+      lbl.innerHTML = `<i class="fa-solid fa-spinner fa-spin text-emerald-400"></i> Reading real device GPS...`;
+
+      navigator.geolocation.getCurrentPosition(
+        (pos) => {
+          const lat = pos.coords.latitude;
+          const lon = pos.coords.longitude;
+          state.userHomeLocation.lat = Number(lat.toFixed(4));
+          state.userHomeLocation.lon = Number(lon.toFixed(4));
+
+          // Set boat coordinates to the real device location if in device mode
+          if (state.gpsMode === 'device') {
+            state.boat.lat = state.userHomeLocation.lat;
+            state.boat.lon = state.userHomeLocation.lon;
+            document.getElementById('gps-lat').innerText = `${Math.floor(lat)}°${Math.floor(lat * 60 % 60)}'${Math.floor(lat * 3600 % 60)}" N`;
+            document.getElementById('gps-lon').innerText = `${Math.floor(lon)}°${Math.floor(lon * 60 % 60)}'${Math.floor(lon * 3600 % 60)}" E`;
+            document.getElementById('lbl-current-coords-chip').innerText = `${lat.toFixed(3)}°N ${lon.toFixed(3)}°E`;
+          }
+
+          // Fetch real address via reverse geocoding
+          fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lon}`)
+            .then(res => res.json())
+            .then(data => {
+              const town = data.address.town || data.address.city || data.address.suburb || data.address.county || "Tamil Nadu";
+              const stateName = data.address.state || "India";
+              state.userHomeLocation.name = `${town}, ${stateName}`;
+              lbl.innerText = `📍 Home GPS: ${state.userHomeLocation.name} (${lat.toFixed(3)}°N, ${lon.toFixed(3)}°E)`;
+            })
+            .catch(() => {
+              lbl.innerText = `📍 Live GPS: ${lat.toFixed(4)}°N, ${lon.toFixed(4)}°E (Real Device Location)`;
+            });
+
+          drawRadar();
+        },
+        (err) => {
+          lbl.innerText = `GPS Note: ${err.message}. Using Tamil Nadu coastal coordinates.`;
+        },
+        { enableHighAccuracy: true, timeout: 10000 }
+      );
+    }
+
+    function selectLocationPreset(preset) {
+      const presets = {
+        rameswaram: { lat: 9.2876, lon: 79.3129, dist: 1850, name: "Palk Strait Sea (Rameswaram)" },
+        mandapam: { lat: 9.2789, lon: 79.1245, dist: 3200, name: "Mandapam Coast Guard Base" },
+        dhanushkodi: { lat: 9.1783, lon: 79.4189, dist: 500, name: "Dhanushkodi Point (Near Border)" },
+        chennai: { lat: 13.0827, lon: 80.2707, dist: 6500, name: "Chennai City / Marina" }
+      };
+
+      if (preset === 'auto') {
+        setGPSLocationMode('device');
+        return;
+      }
+
+      const p = presets[preset] || presets.rameswaram;
+      state.boat.lat = p.lat;
+      state.boat.lon = p.lon;
+      state.boat.distanceToBoundaryMeters = p.dist;
+      document.getElementById('gps-lat').innerText = `${p.lat}° N`;
+      document.getElementById('gps-lon').innerText = `${p.lon}° E`;
+      document.getElementById('radar-dist-val').innerText = `${p.dist.toLocaleString()} m`;
+      document.getElementById('lbl-current-coords-chip').innerText = `${p.lat}°N ${p.lon}°E`;
+      document.getElementById('live-address-label').innerText = `📍 Base: ${p.name}`;
+
+      updateBoundaryStatusTexts();
+      drawRadar();
+    }
+
+    /* =========================================================================
+       BOUNDARY ALERT LOGIC: 5 MINUTES BEFORE & CONTINUOUS SIREN AFTER CROSSING
+       ========================================================================= */
+    let countdownInterval = null;
+
+    function trigger5MinuteWarningAlert() {
+      state.system.alertActive = true;
+      state.system.alertType = '5min';
+
+      const modal = document.getElementById('boundary-alert-modal');
+      modal.classList.remove('hidden');
+
+      const t = I18N[state.lang] || I18N.en;
+      document.getElementById('modal-alert-level-badge').innerText = "5-MIN WARNING";
+      document.getElementById('modal-alert-level-badge').className = "px-2 py-0.5 rounded bg-amber-900 border border-amber-500 font-mono font-bold text-amber-200";
+      document.getElementById('modal-crossing-in').innerText = t.modalCrossingIn;
+      document.getElementById('countdown-timer').innerText = "05:00 min";
+      document.getElementById('modal-alert-message').innerText = t.modalAlertMsg5Min;
+
+      // Play Warning Chime (Intermittent)
+      playMaritimeSirenPulse();
+      speakSpeech(t.speechBoundary5Min, state.lang, 'speechBoundary5Min');
+
+      // Start 5-minute countdown (in seconds)
+      state.system.countdownRemaining = 300;
+      clearInterval(countdownInterval);
+      countdownInterval = setInterval(() => {
+        state.system.countdownRemaining--;
+        const mins = String(Math.floor(state.system.countdownRemaining / 60)).padStart(2, '0');
+        const secs = String(state.system.countdownRemaining % 60).padStart(2, '0');
+        document.getElementById('countdown-timer').innerText = `${mins}:${secs} min`;
+
+        if (state.system.countdownRemaining <= 0) {
+          clearInterval(countdownInterval);
+          triggerBorderBreachSiren();
+        }
+      }, 1000);
+    }
+
+    function triggerBorderBreachSiren() {
+      state.system.alertActive = true;
+      state.system.alertType = 'breach';
+
+      const modal = document.getElementById('boundary-alert-modal');
+      modal.classList.remove('hidden');
+
+      const t = I18N[state.lang] || I18N.en;
+      document.getElementById('modal-alert-level-badge').innerText = "BREACH CONFIRMED";
+      document.getElementById('modal-alert-level-badge').className = "px-2 py-0.5 rounded bg-red-900 border border-red-500 font-mono font-bold text-white animate-pulse";
+      document.getElementById('modal-crossing-in').innerText = "STATUS:";
+      document.getElementById('countdown-timer').innerText = "BORDER CROSSED!";
+      document.getElementById('modal-alert-message').innerText = t.modalAlertMsgBreach;
+
+      // Continuous loud siren after crossing the border!
+      startContinuousSiren();
+      speakSpeech(t.speechBoundaryBreach, state.lang, 'speechBoundaryBreach');
+    }
+
+    function dismissBoundaryAlert() {
+      state.system.alertActive = false;
+      state.system.alertType = null;
+      const modal = document.getElementById('boundary-alert-modal');
+      if (modal) modal.classList.add('hidden');
+      clearInterval(countdownInterval);
+      stopContinuousSiren();
+
+      const island = document.getElementById('dynamic-island');
+      if (island) {
+        island.classList.remove('bg-red-950', 'border-red-500');
+        document.getElementById('island-dot').className = 'w-2 h-2 rounded-full bg-emerald-500';
+        document.getElementById('island-text').innerText = 'THIRAIX Active';
+      }
+    }
+
+    function silenceAlertForSecs() {
+      stopContinuousSiren();
+      document.getElementById('boundary-alert-modal').classList.add('hidden');
+    }
+
+    function steerAwayFromBoundary() {
+      document.getElementById('boat-pos-slider').value = 25;
+      updateBoatFromSlider(25);
+      dismissBoundaryAlert();
+      const msg = state.lang === 'ta' ? "படகு திருப்பப்பட்டது. இந்திய கடல் எல்லைக்குள் பாதுகாப்பாக உள்ளது." : (state.lang === 'hi' ? "नाव वापस मोड़ ली गई है। सुरक्षित क्षेत्र में लौट रहे हैं।" : "Boat turned back. Returning to Indian Territorial Waters.");
+      speakSpeech(msg, state.lang);
+    }
+
+    /* =========================================================================
+       SLIDER & SCENARIOS
+       ========================================================================= */
+    function updateBoatFromSlider(val) {
+      state.boat.sliderProgress = parseInt(val);
+      
+      let dist = 0;
+      if (val <= 70) {
+        dist = Math.round(3500 - (val / 70) * 2250); // 3500 to 1250m (Safe)
+      } else if (val <= 90) {
+        dist = Math.round(1250 - ((val - 70) / 20) * 1250); // 1250m to 0m (5-min warning zone)
+      } else {
+        dist = 0; // Boundary Crossed!
+      }
+      state.boat.distanceToBoundaryMeters = dist;
+
+      document.getElementById('radar-dist-val').innerText = `${state.boat.distanceToBoundaryMeters.toLocaleString()} m`;
+      document.getElementById('alert-distance').innerText = `${state.boat.distanceToBoundaryMeters} m`;
+      document.getElementById('dash-row-dist').innerText = `${state.boat.distanceToBoundaryMeters.toLocaleString()} m`;
+
+      updateBoundaryStatusTexts();
+
+      // Check Warning Conditions:
+      if (dist === 0) {
+        // Border Crossed -> Start continuous siren sound!
+        if (state.system.alertType !== 'breach') {
+          triggerBorderBreachSiren();
+        }
+      } else if (dist <= 1250) {
+        // Within 5 minutes of boundary -> Show 5-minute warning!
+        if (!state.system.alertActive) {
+          trigger5MinuteWarningAlert();
+        }
+      } else {
+        dismissBoundaryAlert();
+      }
+
+      updateAIRiskGauge();
+      drawRadar();
+      drawCommandRadar();
+    }
+
+    function loadScenario(type) {
+      if (type === 'safe') {
+        document.getElementById('boat-pos-slider').value = 15;
+        updateBoatFromSlider(15);
+        setWeatherState('calm');
+        dismissBoundaryAlert();
+      } else if (type === 'warning_5min') {
+        document.getElementById('boat-pos-slider').value = 80;
+        updateBoatFromSlider(80);
+        switchTab('nav');
+      } else if (type === 'breach_siren') {
+        document.getElementById('boat-pos-slider').value = 100;
+        updateBoatFromSlider(100);
+        switchTab('nav');
+      } else if (type === 'weather') {
+        setWeatherState('storm');
+        switchTab('weather');
+      } else if (type === 'sos') {
+        switchTab('sos');
+        triggerEmergencySOS();
+      }
+    }
+
+    function updateBoundaryStatusTexts() {
+      const t = I18N[state.lang] || I18N.en;
+      const statusSpan = document.getElementById('sim-position-status');
+      const radarTimeVal = document.getElementById('radar-time-val');
+      const aiStatus = document.getElementById('lbl-ai-status');
+      const aiSummary = document.getElementById('lbl-ai-summary');
+
+      if (state.boat.distanceToBoundaryMeters > 1250) {
+        statusSpan.innerText = `${t.safeZone} (Territorial Waters)`;
+        statusSpan.className = "text-emerald-400 font-mono text-[11px]";
+        radarTimeVal.innerText = t.safeZone;
+        radarTimeVal.className = "text-[10px] text-emerald-400 font-normal";
+        aiStatus.innerText = t.aiStatusLow;
+        aiSummary.innerText = t.aiSummarySafe;
+      } else if (state.boat.distanceToBoundaryMeters > 0) {
+        statusSpan.innerText = t.warningZone;
+        statusSpan.className = "text-amber-400 font-mono text-[11px] font-bold";
+        radarTimeVal.innerText = "(ETA: < 5 Mins)";
+        radarTimeVal.className = "text-[10px] text-amber-400 font-bold";
+        aiStatus.innerText = t.aiStatusMed;
+        aiSummary.innerText = t.aiSummaryMed;
+      } else {
+        statusSpan.innerText = t.breachImminent;
+        statusSpan.className = "text-rose-400 font-mono text-[11px] font-bold animate-pulse";
+        radarTimeVal.innerText = "(BORDER CROSSED!)";
+        radarTimeVal.className = "text-[10px] text-rose-400 font-bold";
+        aiStatus.innerText = t.aiStatusHigh;
+        aiSummary.innerText = t.aiSummaryHigh;
+      }
+    }
+
+    /* =========================================================================
+       SYSTEM LANGUAGE SWITCHER
+       ========================================================================= */
+    function switchSystemLanguage(langCode) {
+      if (!I18N[langCode]) langCode = 'en';
+      state.lang = langCode;
+
+      document.getElementById('lang-selector-global').value = langCode;
+      document.getElementById('lang-selector-phone').value = langCode;
+
+      const t = I18N[langCode];
+
+      document.getElementById('brand-tagline').innerText = t.brandTagline;
+      document.getElementById('lbl-btn-phone').innerText = t.phoneTitle;
+      document.getElementById('lbl-btn-dual').innerText = t.dualTitle;
+      document.getElementById('lbl-btn-rescue').innerText = t.rescueTitle;
+      document.getElementById('lbl-crew-count').innerText = t.crewCount;
+      document.getElementById('lbl-tab-radar').innerText = t.tabRadar;
+      document.getElementById('lbl-tab-weather').innerText = t.tabWeather;
+      document.getElementById('lbl-tab-risk').innerText = t.tabRisk;
+      document.getElementById('lbl-tab-voice').innerText = t.tabVoice;
+      document.getElementById('lbl-tab-sos').innerText = t.tabSos;
+      document.getElementById('lbl-dist-boundary').innerText = t.distBoundary;
+      document.getElementById('lbl-boat-steer').innerText = t.boatSteer;
+      document.getElementById('lbl-coast-steer').innerText = t.coastLabel;
+      document.getElementById('lbl-imbl-steer').innerText = t.imblLabel;
+      document.getElementById('lbl-wave-height').innerText = t.waveHeight;
+      document.getElementById('lbl-wind-speed').innerText = t.windSpeed;
+      document.getElementById('lbl-live-wave-sim').innerText = t.liveWaveSim;
+      document.getElementById('lbl-wind-vel-box').innerText = t.windVelBox;
+      document.getElementById('lbl-wave-ht-box').innerText = t.waveHtBox;
+      document.getElementById('lbl-rain-rate-box').innerText = t.rainRateBox;
+      document.getElementById('lbl-storm-alert-box').innerText = t.stormAlertBox;
+      document.getElementById('lbl-next-day-title').innerText = t.nextDayTitle;
+      document.getElementById('lbl-next-day-date').innerText = t.nextDayDate;
+      document.getElementById('lbl-fc-temp').innerText = t.fcTemp;
+      document.getElementById('lbl-fc-temp-cond').innerText = t.fcTempCond;
+      document.getElementById('lbl-fc-wind').innerText = t.fcWind;
+      document.getElementById('lbl-fc-wind-dir').innerText = t.fcWindDir;
+      document.getElementById('lbl-fc-wave').innerText = t.fcWave;
+      document.getElementById('lbl-fc-wave-cond').innerText = t.fcWaveCond;
+      document.getElementById('lbl-fc-advisory-title').innerText = t.fcAdvisoryTitle;
+      document.getElementById('lbl-fc-advisory-text').innerText = t.fcAdvisoryText;
+      document.getElementById('btn-weather-calm').innerText = t.weatherCalm;
+      document.getElementById('btn-weather-rough').innerText = t.weatherRough;
+      document.getElementById('btn-weather-storm').innerText = t.weatherStorm;
+      document.getElementById('lbl-ai-risk-title').innerText = t.aiRiskTitle;
+      document.getElementById('lbl-risk-factor-boundary').innerText = t.riskFactorBoundary;
+      document.getElementById('lbl-risk-factor-wave').innerText = t.riskFactorWave;
+      document.getElementById('lbl-risk-factor-wind').innerText = t.riskFactorWind;
+      document.getElementById('lbl-safe-return-title').innerText = t.safeReturnTitle;
+      document.getElementById('lbl-rec-port-name').innerText = t.recPortName;
+      document.getElementById('lbl-ai-voice-title').innerText = t.aiVoiceTitle;
+      
+      const langNames = { en: "English", ta: "தமிழ்", hi: "हिन्दी", te: "తెలుగు", kn: "ಕನ್ನಡ", ml: "മലയാളം", bn: "বাংলা", or: "ଓଡ଼ିଆ", pa: "ਪੰਜਾਬੀ", ur: "اردو" };
+      document.getElementById('voice-lang-chip').innerText = langNames[langCode] || "Selected";
+      document.getElementById('mic-status-label').innerText = t.tapMicLabel;
+      document.getElementById('lbl-or-click-question').innerText = t.orClickQuestion;
+      document.getElementById('chip-q-weather').querySelector('span').innerText = t.qWeather;
+      document.getElementById('chip-q-tomorrow').querySelector('span').innerText = t.qTomorrow;
+      document.getElementById('chip-q-boundary').querySelector('span').innerText = t.qBoundary;
+      document.getElementById('chip-q-harbor').querySelector('span').innerText = t.qHarbor;
+      document.getElementById('lbl-assistant-reply-title').innerText = t.assistantReplyTitle;
+      document.getElementById('voice-response-text').innerText = t.assistantWelcome;
+      document.getElementById('lbl-lora-title').innerText = t.loraTitle;
+      document.getElementById('lbl-lora-status').innerText = t.loraStatusLbl;
+      document.getElementById('lbl-telemetry-packets').innerText = t.telemetryPackets;
+      document.getElementById('lbl-sos-distress-title').innerText = t.sosDistressTitle;
+      document.getElementById('lbl-sos-desc').innerText = t.sosDesc;
+      document.getElementById('btn-turn-back').innerHTML = `<i class="fa-solid fa-rotate-left"></i> ${t.btnTurnBack}`;
+      document.getElementById('btn-mute-15s').innerHTML = `<i class="fa-solid fa-bell-slash"></i> ${t.btnMute15s}`;
+      document.getElementById('btn-modal-sos').innerHTML = `<i class="fa-solid fa-life-ring"></i> ${t.modalSosBtn}`;
+
+      updateBoundaryStatusTexts();
+      playBeep(850, 0.05);
+    }
+
+    /* =========================================================================
+       THEME SWITCHER
+       ========================================================================= */
+    function toggleThemeMode() {
+      const htmlRoot = document.getElementById('html-root');
+      const bodyRoot = document.getElementById('body-root');
+      const phoneFrame = document.getElementById('phone-device-frame');
+      const phoneScreen = document.getElementById('phone-screen');
+      const themeIcon = document.getElementById('theme-icon');
+      const themeLabel = document.getElementById('theme-label');
+
+      if (state.theme === 'dark') {
+        state.theme = 'light';
+        htmlRoot.classList.remove('dark');
+        bodyRoot.className = "bg-slate-100 text-slate-900 min-h-screen font-sans p-2 sm:p-4 transition-colors duration-300";
+        phoneFrame.className = "relative w-[385px] sm:w-[400px] h-[855px] rounded-[52px] p-[12px] bg-gradient-to-b from-slate-200 via-slate-300 to-slate-400 phone-shadow-light border-4 border-slate-300 select-none transition-all duration-300";
+        phoneScreen.className = "relative w-full h-full bg-white rounded-[42px] overflow-hidden flex flex-col border border-slate-300 text-slate-800 transition-colors duration-300";
+        themeIcon.className = "fa-solid fa-moon text-indigo-400";
+        themeLabel.innerText = "Night Mode";
+      } else {
+        state.theme = 'dark';
+        htmlRoot.classList.add('dark');
+        bodyRoot.className = "bg-slate-950 text-slate-100 min-h-screen font-sans p-2 sm:p-4 transition-colors duration-300";
+        phoneFrame.className = "relative w-[385px] sm:w-[400px] h-[855px] rounded-[52px] p-[12px] bg-gradient-to-b from-slate-700 via-slate-800 to-slate-900 phone-shadow-dark border-4 border-slate-600/70 select-none transition-all duration-300";
+        phoneScreen.className = "relative w-full h-full bg-slate-950 rounded-[42px] overflow-hidden flex flex-col border border-slate-800 text-slate-100 transition-colors duration-300";
+        themeIcon.className = "fa-solid fa-sun text-amber-400";
+        themeLabel.innerText = "Day Mode";
+      }
+      playBeep(700, 0.08);
+    }
+
+    /* =========================================================================
+       WEATHER & RISK GAUGE
+       ========================================================================= */
+    function setWeatherState(mode) {
+      state.weather.mode = mode;
+      const chip = document.getElementById('weather-state-chip');
+      const stormVal = document.getElementById('card-storm-val');
+
+      if (mode === 'calm') {
+        state.weather.waveHeightM = 1.2;
+        state.weather.windSpeedKnots = 16.0;
+        state.weather.rainfallMm = 1.5;
+        chip.innerHTML = '<i class="fa-solid fa-sun text-yellow-400 mr-1"></i> Calm Sea';
+        stormVal.innerText = 'NIL';
+        stormVal.className = 'text-base font-bold text-emerald-300 font-mono';
+      } else if (mode === 'rough') {
+        state.weather.waveHeightM = 2.8;
+        state.weather.windSpeedKnots = 28.5;
+        state.weather.rainfallMm = 18.0;
+        chip.innerHTML = '<i class="fa-solid fa-water text-cyan-400 mr-1"></i> Rough Waves (2.8m)';
+        stormVal.innerText = 'WATCH';
+        stormVal.className = 'text-base font-bold text-amber-400 font-mono';
+      } else if (mode === 'storm') {
+        state.weather.waveHeightM = 4.4;
+        state.weather.windSpeedKnots = 42.0;
+        state.weather.rainfallMm = 52.0;
+        chip.innerHTML = '<i class="fa-solid fa-cloud-bolt text-rose-400 mr-1"></i> Gale Warning (Signal 4)';
+        stormVal.innerText = 'GALE STORM';
+        stormVal.className = 'text-base font-bold text-rose-400 font-mono animate-pulse';
+        playMaritimeSirenPulse();
+        speakSpeech("Storm warning! High waves and gale winds detected. Return to harbor.");
+      }
+
+      document.getElementById('card-wave-val').innerText = `${state.weather.waveHeightM} m`;
+      document.getElementById('card-wind-val').innerText = `${state.weather.windSpeedKnots} kts`;
+      document.getElementById('card-rain-val').innerText = `${state.weather.rainfallMm} mm/h`;
+      document.getElementById('nav-wave-stat').innerHTML = `${state.weather.waveHeightM} m <span class="text-[10px] text-slate-400 font-normal">State</span>`;
+      document.getElementById('nav-wind-stat').innerHTML = `${state.weather.windSpeedKnots} kts <span class="text-[10px] text-slate-400 font-normal">Knots</span>`;
+
+      updateAIRiskGauge();
+    }
+
+    function updateAIRiskGauge() {
+      const boundaryRisk = Math.max(0, 100 - (state.boat.distanceToBoundaryMeters / 3000) * 100);
+      const waveRisk = (state.weather.waveHeightM / 4.0) * 100;
+      const windRisk = (state.weather.windSpeedKnots / 40.0) * 100;
+      const totalRisk = Math.round(boundaryRisk * 0.5 + waveRisk * 0.3 + windRisk * 0.2);
+
+      const circle = document.getElementById('risk-gauge-circle');
+      const scoreDisp = document.getElementById('risk-score-display');
+      const badge = document.getElementById('risk-level-badge');
+
+      scoreDisp.innerText = totalRisk;
+      const offset = 251.2 - (totalRisk / 100) * 251.2;
+      circle.style.strokeDashoffset = offset;
+
+      document.getElementById('risk-bar-boundary-val').innerText = `${Math.round(boundaryRisk)}%`;
+      document.getElementById('risk-bar-boundary').style.width = `${boundaryRisk}%`;
+      document.getElementById('risk-bar-wave-val').innerText = `${Math.round(waveRisk)}%`;
+      document.getElementById('risk-bar-wave').style.width = `${waveRisk}%`;
+      document.getElementById('risk-bar-wind-val').innerText = `${Math.round(windRisk)}%`;
+      document.getElementById('risk-bar-wind').style.width = `${windRisk}%`;
+
+      if (totalRisk < 35) {
+        circle.style.stroke = '#10b981';
+        badge.innerText = 'LOW RISK';
+        badge.className = 'text-[10px] font-bold uppercase tracking-wider text-emerald-400';
+      } else if (totalRisk < 70) {
+        circle.style.stroke = '#f59e0b';
+        badge.innerText = 'MEDIUM RISK';
+        badge.className = 'text-[10px] font-bold uppercase tracking-wider text-amber-400';
+      } else {
+        circle.style.stroke = '#ef4444';
+        badge.innerText = 'HIGH RISK';
+        badge.className = 'text-[10px] font-bold uppercase tracking-wider text-rose-500 animate-pulse';
+      }
+    }
+
+    /* =========================================================================
+       CANVAS RADAR & MAP PLOTTER (REAL LOCATION vs SEA)
+       ========================================================================= */
+    const radarCanvas = document.getElementById('radar-canvas');
+    const rCtx = radarCanvas.getContext('2d');
+    let sweepAngle = 0;
+
+    function drawRadar() {
+      const w = radarCanvas.width;
+      const h = radarCanvas.height;
+
+      rCtx.clearRect(0, 0, w, h);
+      rCtx.fillStyle = state.theme === 'dark' ? '#091528' : '#e0f2fe';
+      rCtx.fillRect(0, 0, w, h);
+
+      if (state.gpsMode === 'device') {
+        // DRAW REAL HOME LOCATION RADAR MAP
+        rCtx.fillStyle = state.theme === 'dark' ? '#1e293b' : '#cbd5e1';
+        rCtx.fillRect(20, 20, w - 40, h - 40);
+
+        rCtx.strokeStyle = 'rgba(16, 185, 129, 0.3)';
+        rCtx.lineWidth = 1;
+        for (let r = 30; r < w; r += 40) {
+          rCtx.beginPath();
+          rCtx.arc(w / 2, h / 2, r, 0, Math.PI * 2);
+          rCtx.stroke();
+        }
+
+        // Home Location Marker
+        rCtx.fillStyle = '#10b981';
+        rCtx.beginPath();
+        rCtx.arc(w / 2, h / 2, 7, 0, Math.PI * 2);
+        rCtx.fill();
+        rCtx.strokeStyle = '#ffffff';
+        rCtx.lineWidth = 2;
+        rCtx.stroke();
+
+        rCtx.fillStyle = state.theme === 'dark' ? '#34d399' : '#065f46';
+        rCtx.font = 'bold 10px sans-serif';
+        rCtx.fillText('YOU ARE HERE (REAL GPS)', w / 2 - 60, h / 2 - 14);
+        rCtx.fillText(state.userHomeLocation.name, w / 2 - 50, h / 2 + 22);
+
+      } else {
+        // DRAW SEA NAVIGATION RADAR WITH TAMIL NADU & IMBL BORDER LINE
+        rCtx.beginPath();
+        rCtx.moveTo(0, 0); rCtx.lineTo(60, 40); rCtx.lineTo(95, 110); rCtx.lineTo(75, 170); rCtx.lineTo(110, 220); rCtx.lineTo(0, 220);
+        rCtx.closePath();
+        rCtx.fillStyle = state.theme === 'dark' ? '#064e3b' : '#a7f3d0';
+        rCtx.fill();
+        rCtx.strokeStyle = '#10b981';
+        rCtx.lineWidth = 1.5;
+        rCtx.stroke();
+
+        rCtx.fillStyle = state.theme === 'dark' ? '#6ee7b7' : '#047857';
+        rCtx.font = 'bold 9px monospace';
+        rCtx.fillText('TAMIL NADU', 10, 80);
+        rCtx.fillText('Rameswaram Base', 12, 130);
+
+        // IMBL Line
+        const imblX = w * 0.76;
+        rCtx.beginPath();
+        rCtx.setLineDash([6, 4]);
+        rCtx.moveTo(imblX - 20, 0); rCtx.lineTo(imblX + 10, h);
+        rCtx.strokeStyle = '#ef4444';
+        rCtx.lineWidth = 2.5;
+        rCtx.stroke();
+        rCtx.setLineDash([]);
+
+        rCtx.fillStyle = 'rgba(239, 68, 68, 0.18)';
+        rCtx.fillRect(imblX - 45, 0, 55, h);
+
+        rCtx.fillStyle = '#ef4444';
+        rCtx.font = 'bold 8px monospace';
+        rCtx.fillText('IMBL BORDER LINE', imblX - 45, 18);
+
+        // Boat Position
+        const sliderPct = state.boat.sliderProgress / 100;
+        const boatX = 90 + sliderPct * (imblX - 70);
+        const boatY = 110 + (sliderPct - 0.5) * 40;
+
+        rCtx.save();
+        rCtx.translate(boatX, boatY);
+        rCtx.fillStyle = state.boat.distanceToBoundaryMeters <= 0 ? '#ef4444' : '#0284c7';
+        rCtx.beginPath();
+        rCtx.moveTo(12, 0); rCtx.lineTo(-10, -7); rCtx.lineTo(-6, 0); rCtx.lineTo(-10, 7);
+        rCtx.closePath();
+        rCtx.fill();
+        rCtx.strokeStyle = '#ffffff';
+        rCtx.lineWidth = 1.5;
+        rCtx.stroke();
+        rCtx.restore();
+      }
+
+      // Radar Sweep Effect
+      rCtx.save();
+      rCtx.translate(w / 2, h / 2);
+      rCtx.rotate(sweepAngle);
+      const grad = rCtx.createLinearGradient(0, 0, 120, 0);
+      grad.addColorStop(0, 'rgba(56, 189, 248, 0)');
+      grad.addColorStop(1, 'rgba(56, 189, 248, 0.25)');
+      rCtx.fillStyle = grad;
+      rCtx.beginPath();
+      rCtx.moveTo(0, 0); rCtx.arc(0, 0, 120, 0, 0.35); rCtx.closePath(); rCtx.fill();
+      rCtx.restore();
+
+      sweepAngle += 0.03;
+    }
+
+    /* =========================================================================
+       CANVAS WEATHER & COMMAND RADAR
+       ========================================================================= */
+    const weatherCanvas = document.getElementById('weather-anim-canvas');
+    const wCtx = weatherCanvas.getContext('2d');
+    let waveStep = 0;
+    const rainDrops = [];
+
+    for (let i = 0; i < 40; i++) {
+      rainDrops.push({ x: Math.random() * 370, y: Math.random() * 180, speed: 4 + Math.random() * 6, length: 8 + Math.random() * 10 });
+    }
+
+    function drawWeather() {
+      const w = weatherCanvas.width;
+      const h = weatherCanvas.height;
+
+      wCtx.clearRect(0, 0, w, h);
+      let skyGrad = wCtx.createLinearGradient(0, 0, 0, h);
+      if (state.weather.mode === 'calm') {
+        skyGrad.addColorStop(0, state.theme === 'dark' ? '#0c4a6e' : '#38bdf8');
+        skyGrad.addColorStop(1, state.theme === 'dark' ? '#0284c7' : '#bae6fd');
+      } else {
+        skyGrad.addColorStop(0, '#050505');
+        skyGrad.addColorStop(1, '#1e1b4b');
+      }
+      wCtx.fillStyle = skyGrad;
+      wCtx.fillRect(0, 0, w, h);
+
+      const amp = state.weather.waveHeightM * 9;
+      const freq = 0.035;
+
+      wCtx.fillStyle = state.weather.mode === 'storm' ? '#0f172a' : '#083344';
+      wCtx.beginPath();
+      wCtx.moveTo(0, h);
+      for (let x = 0; x <= w; x += 5) {
+        const y = h - 45 + Math.sin(x * freq * 1.2 + waveStep) * amp;
+        wCtx.lineTo(x, y);
+      }
+      wCtx.lineTo(w, h);
+      wCtx.closePath();
+      wCtx.fill();
+
+      waveStep += 0.05;
+    }
+
+    const cmdCanvas = document.getElementById('command-radar-canvas');
+    const cCtx = cmdCanvas.getContext('2d');
+
+    function drawCommandRadar() {
+      const w = cmdCanvas.width;
+      const h = cmdCanvas.height;
+      cCtx.clearRect(0, 0, w, h);
+      cCtx.fillStyle = state.theme === 'dark' ? '#020617' : '#f1f5f9';
+      cCtx.fillRect(0, 0, w, h);
+
+      cCtx.strokeStyle = 'rgba(56, 189, 248, 0.2)';
+      cCtx.lineWidth = 1;
+      for (let r = 40; r < w; r += 50) {
+        cCtx.beginPath();
+        cCtx.arc(w / 2, h / 2, r, 0, Math.PI * 2);
+        cCtx.stroke();
+      }
+
+      cCtx.fillStyle = '#10b981';
+      cCtx.beginPath();
+      cCtx.arc(w / 2, h / 2, 5, 0, Math.PI * 2);
+      cCtx.fill();
+    }
+
+    function animationLoop() {
+      drawRadar();
+      drawWeather();
+      drawCommandRadar();
+      requestAnimationFrame(animationLoop);
+    }
+
+    /* =========================================================================
+       MISC CONTROLLERS & INITIALIZATION
+       ========================================================================= */
+    function toggleNetworkConnection() {
+      if (state.system.network === 'CELLULAR') {
+        state.system.network = 'LORA_OFFLINE';
+        document.getElementById('phone-net-label').innerText = 'LoRa';
+        document.getElementById('phone-net-icon').className = 'fa-solid fa-satellite-dish text-purple-400';
+        document.getElementById('lora-status-text').innerText = 'LoRa 868MHz Active (No Cellular)';
+        document.getElementById('dash-row-net').innerText = 'LoRa RF';
+      } else {
+        state.system.network = 'CELLULAR';
+        document.getElementById('phone-net-label').innerText = '4G';
+        document.getElementById('phone-net-icon').className = 'fa-solid fa-signal text-cyan-400';
+        document.getElementById('lora-status-text').innerText = '4G Cellular Primary';
+        document.getElementById('dash-row-net').innerText = '4G LTE';
+      }
+      playBeep(800, 0.1);
+    }
+
+    function triggerEmergencySOS() {
+      playMaritimeSirenPulse();
+      const statusDiv = document.getElementById('sos-beacon-status');
+      statusDiv.classList.remove('hidden');
+      document.getElementById('dash-sos-count').innerText = '1 Vessel SOS!';
+      speakSpeech((I18N[state.lang] || I18N.en).speechSos, state.lang, 'speechSos');
+    }
+
+    function dispatchRescueInterceptor() {
+      alert("Indian Coast Guard Interceptor Boat ICG C-431 Dispatched from Mandapam Base!\nETA: 18 Minutes.");
+      playBeep(1200, 0.3);
+    }
+
+    function pingVesselWarning() {
+      speakSpeech("Attention fishing vessel! You are near international boundary line.");
+    }
+
+    function switchTab(tabName) {
+      ['nav', 'weather', 'risk', 'voice', 'sos'].forEach(t => {
+        document.getElementById(`tab-${t}-view`).classList.add('hidden');
+        document.getElementById(`p-tab-${t}`).classList.remove('text-cyan-400');
+        document.getElementById(`p-tab-${t}`).classList.add('text-slate-400');
+      });
+      document.getElementById(`tab-${tabName}-view`).classList.remove('hidden');
+      document.getElementById(`p-tab-${tabName}`).classList.remove('text-slate-400');
+      document.getElementById(`p-tab-${tabName}`).classList.add('text-cyan-400');
+      playBeep(900, 0.04);
+    }
+
+    function setViewMode(mode) {
+      const phoneCol = document.getElementById('phone-column');
+      const dashCol = document.getElementById('dashboard-column');
+      const btnPhone = document.getElementById('tab-phone-btn');
+      const btnDual = document.getElementById('tab-dual-btn');
+      const btnDash = document.getElementById('tab-dash-btn');
+
+      [btnPhone, btnDual, btnDash].forEach(b => b.className = 'px-2.5 sm:px-3 py-1.5 rounded-md text-slate-300 hover:text-white transition');
+
+      if (mode === 'phone') {
+        btnPhone.className = 'px-2.5 sm:px-3 py-1.5 rounded-md bg-cyan-600 text-white font-medium shadow';
+        phoneCol.className = 'lg:col-span-12 flex flex-col items-center justify-center';
+        dashCol.className = 'hidden';
+      } else if (mode === 'dual') {
+        btnDual.className = 'px-2.5 sm:px-3 py-1.5 rounded-md bg-cyan-600 text-white font-medium shadow';
+        phoneCol.className = 'lg:col-span-5 flex flex-col items-center justify-center';
+        dashCol.className = 'lg:col-span-7 space-y-4';
+      } else {
+        btnDash.className = 'px-2.5 sm:px-3 py-1.5 rounded-md bg-cyan-600 text-white font-medium shadow';
+        phoneCol.className = 'hidden';
+        dashCol.className = 'lg:col-span-12 space-y-4';
+      }
+    }
+
+    function updateRealTimeAndDate() {
+      const now = new Date();
+      let hours = now.getHours();
+      const minutes = String(now.getMinutes()).padStart(2, '0');
+      const seconds = String(now.getSeconds()).padStart(2, '0');
+      const ampm = hours >= 12 ? 'PM' : 'AM';
+      const formattedPhoneHours = String(hours).padStart(2, '0');
+      hours = hours % 12 || 12;
+      const formattedHours = String(hours).padStart(2, '0');
+
+      document.getElementById('live-real-time').innerText = `${formattedHours}:${minutes}:${seconds} ${ampm}`;
+      document.getElementById('phone-clock').innerText = `${formattedPhoneHours}:${minutes}`;
+
+      const days = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+      const months = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
+      document.getElementById('live-real-date').innerText = `${days[now.getDay()]}, ${now.getDate()} ${months[now.getMonth()]} ${now.getFullYear()}`;
+    }
+    setInterval(updateRealTimeAndDate, 1000);
+    updateRealTimeAndDate();
+
+    window.addEventListener('DOMContentLoaded', () => {
+      switchSystemLanguage('en');
+      requestDeviceRealLocation();
+      updateBoatFromSlider(30);
+      setWeatherState('calm');
+      animationLoop();
+    });
+  </script>
+</body>
+</html>
