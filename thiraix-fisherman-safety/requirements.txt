@@ -1,0 +1,5 @@
+# Standard Python Library is primarily used for zero-dependency execution.
+# Optional modern production dependencies:
+fastapi>=0.100.0
+uvicorn>=0.22.0
+requests>=2.31.0
